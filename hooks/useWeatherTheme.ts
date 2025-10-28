@@ -15,10 +15,13 @@ interface WeatherTheme {
  * Returns thematic colors and gradients based on the weather condition (mocked for now).
  * This abstracts the logic for dynamic and beautiful backgrounds.
  */
-export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
+export const useWeatherTheme = (
+    condition: WeatherIcon,
+    isDay: boolean = true
+): WeatherTheme => {
     return useMemo(() => {
         switch (condition) {
-            case 'sunny':
+            case 'sunny': // Inherently day
                 return {
                     primaryColor: COLORS.blueDark,
                     secondaryColor: COLORS.blueLight,
@@ -27,7 +30,7 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                     // Bright, clear day gradient
                     backgroundGradient: ['#3A84FF', '#6DD5FA'],
                 };
-            case 'clear': // Typically clear night (using a dark theme)
+            case 'clear': // Inherently night (based on our weatherService logic)
                 return {
                     primaryColor: COLORS.indigo,
                     secondaryColor: '#26D0CE',
@@ -38,24 +41,48 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                 };
             case 'partly cloudy':
             case 'cloudy':
-                return {
-                    primaryColor: '#5B7E9F', // Gray-Blue
-                    secondaryColor: COLORS.gray,
-                    iconTint: COLORS.white,
-                    textColor: COLORS.textDark, // Dark text on light gray background
-                    // Overcast/Partly Cloudy gradient
-                    backgroundGradient: ['#8E9EAB', '#D7D2CC'],
-                };
+                if (isDay) {
+                    return {
+                        primaryColor: '#5B7E9F', // Gray-Blue
+                        secondaryColor: COLORS.gray,
+                        iconTint: COLORS.white,
+                        textColor: COLORS.textDark, // Dark text on light gray background
+                        // Overcast/Partly Cloudy day gradient
+                        backgroundGradient: ['#B0C4DE', '#F0F8FF'], // Light Steel Blue to Alice Blue
+                    };
+                } else {
+                    // Cloudy Night
+                    return {
+                        primaryColor: '#3E5151',
+                        secondaryColor: '#3E5151',
+                        iconTint: COLORS.white,
+                        textColor: COLORS.white,
+                        // Dark, moody cloudy night
+                        backgroundGradient: ['#3E5151', '#1A2929'], // Dark slate gray gradient
+                    };
+                }
             case 'rainy':
             case 'stormy':
-                return {
-                    primaryColor: COLORS.indigo,
-                    secondaryColor: COLORS.slate,
-                    iconTint: COLORS.white,
-                    textColor: COLORS.white, // White text on dark background
-                    // Rainy/Stormy gradient
-                    backgroundGradient: ['#4b6cb7', '#182848'],
-                };
+                if (isDay) {
+                    return {
+                        primaryColor: '#617A9A', // Slate gray-blue
+                        secondaryColor: COLORS.slate,
+                        iconTint: COLORS.white,
+                        textColor: COLORS.white,
+                        // Gloomy, rainy day
+                        backgroundGradient: ['#617A9A', '#A3B4C8'],
+                    };
+                } else {
+                    // Rainy/Stormy Night
+                    return {
+                        primaryColor: COLORS.indigo,
+                        secondaryColor: COLORS.slate,
+                        iconTint: COLORS.white,
+                        textColor: COLORS.white, // White text on dark background
+                        // Dark rainy/stormy night gradient
+                        backgroundGradient: ['#2c3e50', '#182848'],
+                    };
+                }
             case 'snowy':
                 return {
                     primaryColor: COLORS.white,
@@ -84,5 +111,5 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                     backgroundGradient: ['#3A84FF', '#6DD5FA'],
                 };
         }
-    }, [condition]);
+    }, [condition, isDay]);
 };

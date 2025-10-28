@@ -50,7 +50,8 @@ export default function Index() {
 
   // Use the custom hook - provide a default icon initially
   const { textColor, backgroundGradient } = useWeatherTheme(
-    weatherData?.icon ?? "sunny"
+    weatherData?.icon ?? "sunny",
+    weatherData?.isDay ?? true
   );
 
   useEffect(() => {

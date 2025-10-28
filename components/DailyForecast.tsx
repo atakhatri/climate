@@ -95,6 +95,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     // backgroundColor: 'red', // For debugging alignment
+    paddingRight: SPACING.md, // Add padding
   },
   tempContainer: {
     flexDirection: "row",

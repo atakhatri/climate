@@ -1,6 +1,11 @@
 // app/services/weatherService.ts
+import { format } from "date-fns/format";
+import { fromUnixTime } from "date-fns/fromUnixTime";
+import { isToday } from "date-fns/isToday";
+import { parseISO } from "date-fns/parseISO";
 import Constants from 'expo-constants';
 import { CurrentWeather, WeatherIcon } from '../utils/types';
+
 
 // --- API Keys and URLs ---
 // const OPENWEATHERMAP_API_KEY = Constants.expoConfig?.extra?.openWeatherApiKey || 'YOUR_OPENWEATHERMAP_API_KEY'; // No longer primary
@@ -19,6 +24,22 @@ export interface GeoLocation {
     country: string;
     state?: string;
     formatted: string;
+}
+
+// Define the structure for hourly forecast data points
+export interface HourlyData {
+    time: string;
+    icon: WeatherIcon;
+    isDay: boolean;
+    temp: number;
+}
+
+// Define the structure for daily forecast data points
+export interface DailyData {
+    day: string;
+    icon: WeatherIcon;
+    high: number;
+    low: number;
 }
 
 // --- NEW/UPDATED Icon Mapping for WeatherAPI.com ---
@@ -86,76 +107,108 @@ const getConditionFromCode = (code: number, isDay: number): WeatherIcon => {
 // --- End Icon Mapping ---
 
 // --- Function to fetch weather data ---
-export const fetchWeatherData = async (lat: number, lon: number): Promise<CurrentWeather | null> => {
-    if (!WEATHERAPI_API_KEY || WEATHERAPI_API_KEY === 'YOUR_WEATHERAPI_API_KEY') {
-        console.error("WeatherAPI.com API Key missing!");
-        return null;
+export const fetchWeatherData = async (
+    lat: number,
+    lon: number
+): Promise<CurrentWeather | null> => {
+    if (!WEATHERAPI_API_KEY || WEATHERAPI_API_KEY === "YOUR_WEATHERAPI_KEY") {
+        // ... (error handling remains the same) ...
+        console.error(
+            "WeatherAPI Key is missing. Please add it to .env.local and app.config.js's extra section."
+        );
+        throw new Error("Missing WeatherAPI Key");
     }
+
+    // Request 7 days of forecast for the daily view
     const url = `${WEATHERAPI_FORECAST_URL}?key=${WEATHERAPI_API_KEY}&q=${lat},${lon}&days=7&aqi=no&alerts=no`;
 
     try {
         const response = await fetch(url);
-        if (!response.ok) {
-            // ... (error handling as before) ...
-            return null;
-        }
         const data = await response.json();
-        if (!data || !data.current || !data.forecast || !data.forecast.forecastday) {
-            console.error("WeatherAPI response missing expected data structure");
-            return null;
+
+        if (!response.ok || data.error) {
+            // ... (error handling remains the same) ...
+            const errorMessage = data.error?.message || `HTTP error! status: ${response.status}`;
+            console.error("WeatherAPI Error:", errorMessage, data);
+            if (response.status === 401 || response.status === 403) {
+                throw new Error("Unauthorized for WeatherAPI: Check API key or subscription.");
+            }
+            throw new Error(errorMessage);
         }
 
-        const currentHour = new Date().getHours();
+        const current = data.current;
+        const forecast = data.forecast.forecastday;
+        const todayForecast = forecast[0];
+        const tomorrowForecast = forecast[1]; // Get tomorrow's hourly data too
 
-        // Get initial condition from API code
-        let iconCondition = getConditionFromCode(data.current.condition?.code, data.current.is_day);
-        const windSpeedMs = Math.round(data.current.wind_kph / 3.6);
+        // --- ADJUSTED HOURLY FORECAST LOGIC ---
+        const nowEpoch = Math.floor(Date.now() / 1000); // Current time in seconds
+        const allHours = [
+            ...(todayForecast?.hour || []),
+            ...(tomorrowForecast?.hour || []) // Combine today's and tomorrow's hours
+        ];
 
-        // If wind is strong (>10 m/s), override the icon, unless there's a more severe condition.
-        if (windSpeedMs > 10 && iconCondition !== 'stormy' && iconCondition !== 'rainy' && iconCondition !== 'snowy') {
-            iconCondition = 'windy';
+        // Find index of the hour closest to or just after the current time
+        let currentHourIndex = allHours.findIndex(hour => hour.time_epoch >= nowEpoch);
+
+        // Handle edge case where current time is past the last hour available
+        if (currentHourIndex === -1 && allHours.length > 0) {
+            currentHourIndex = allHours.length - 1; // Default to the last available hour
+        } else if (currentHourIndex === -1) {
+            currentHourIndex = 0; // Or default to 0 if allHours is empty
         }
 
-        const transformedData: CurrentWeather = {
-            location: data.location?.name || 'Current Location',
-            temperature: Math.round(data.current.temp_c),
-            condition: data.current.condition?.text || 'N/A',
-            // Store the general condition type and isDay flag
-            icon: iconCondition,
-            isDay: data.current.is_day === 1, // Store isDay flag for current weather
-            // -----
-            high: data.forecast.forecastday[0]?.day ? Math.round(data.forecast.forecastday[0].day.maxtemp_c) : 0,
-            timezone: data.location.tz_id, // Add the timezone
-            low: data.forecast.forecastday[0]?.day ? Math.round(data.forecast.forecastday[0].day.mintemp_c) : 0,
-            windSpeed: windSpeedMs,
-            humidity: data.current.humidity,
-            feelsLike: Math.round(data.current.feelslike_c), // Add feelsLike temperature
-            uvIndex: Math.round(data.current.uv),
-            hourly: data.forecast.forecastday[0]?.hour
-                ?.filter((hour: any) => new Date(hour.time_epoch * 1000).getHours() >= currentHour)
-                .slice(0, 9)
-                .map((hour: any) => ({
-                    time: new Date(hour.time_epoch * 1000).toLocaleTimeString([], { hour: 'numeric', hour12: true }),
-                    // Store general condition and isDay for hourly
-                    icon: getConditionFromCode(hour.condition?.code, hour.is_day),
-                    isDay: hour.is_day === 1, // Store isDay flag for hourly forecast
-                    // -----
-                    temp: Math.round(hour.temp_c),
-                })) || [],
-            daily: data.forecast.forecastday.slice(0, 7).map((dayEntry: any) => ({
-                day: new Date(dayEntry.date_epoch * 1000).toLocaleDateString([], { weekday: 'short' }),
-                // Store general condition, assume day for daily icon choice
-                icon: getConditionFromCode(dayEntry.day.condition?.code, 1),
-                // -----
-                high: Math.round(dayEntry.day.maxtemp_c),
-                low: Math.round(dayEntry.day.mintemp_c),
-            })),
+        // Calculate start index: Go back 1 hour from current, but don't go below 0
+        const startIndex = Math.max(0, currentHourIndex - 1);
+        // Calculate end index: startIndex + 12 hours total
+        const endIndex = startIndex + 12;
+
+        const hourlyData: HourlyData[] = allHours
+            .slice(startIndex, endIndex) // Extract the 12-hour window
+            .map((hour: any): HourlyData => ({
+                time: format(fromUnixTime(hour.time_epoch), "h a"), // e.g., "8 PM"
+                icon: getConditionFromCode(hour.condition?.code, hour.is_day),
+                isDay: hour.is_day === 1,
+                temp: Math.round(hour.temp_c),
+            }));
+        // --- END ADJUSTED HOURLY FORECAST LOGIC ---
+
+
+        const weatherData: CurrentWeather = {
+            // ... (rest of the weatherData mapping remains the same) ...
+            location: data.location.name,
+            temperature: Math.round(current.temp_c),
+            condition: current.condition.text,
+            icon: getConditionFromCode(current.condition.code, current.is_day),
+            isDay: current.is_day === 1,
+            high: Math.round(todayForecast.day.maxtemp_c),
+            low: Math.round(todayForecast.day.mintemp_c),
+            windSpeed: Math.round(current.wind_kph * 1000 / 3600),
+            humidity: current.humidity,
+            feelsLike: Math.round(current.feelslike_c), // Add feelsLike temperature
+            timezone: data.location.tz_id, // Add timezone identifier
+            uvIndex: current.uv,
+            hourly: hourlyData, // Assign the newly processed 12-hour data
+            daily: forecast.map((dayData: any): DailyData => {
+                const date = parseISO(dayData.date);
+                return {
+                    day: isToday(date) ? "Today" : format(date, "E"), // Use "Today" for the current day
+                    icon: getConditionFromCode(dayData.day.condition.code, 1), // Assume day for forecast icon
+                    high: Math.round(dayData.day.maxtemp_c),
+                    low: Math.round(dayData.day.mintemp_c),
+                };
+            }),
         };
-        return transformedData;
 
+        return weatherData;
     } catch (error) {
-        console.error("Failed to fetch weather data from WeatherAPI:", error);
-        return null;
+        // ... (error handling remains the same) ...
+        console.error("Failed to fetch weather data:", error);
+        if (error instanceof Error) {
+            throw error;
+        } else {
+            throw new Error("An unknown error occurred while fetching weather data.");
+        }
     }
 };
 // --- End fetchWeatherData ---
@@ -202,3 +255,47 @@ export const searchCities = async (query: string, limit: number = 5): Promise<Ge
     }
 };
 // --- End searchCities ---
+
+export const reverseGeocode = async (lat: number, lon: number): Promise<GeoLocation | null> => {
+    if (!OPENCAGE_API_KEY || OPENCAGE_API_KEY === 'YOUR_OPENCAGE_API_KEY') {
+        console.error("OpenCage API Key missing for reverse geocoding!");
+        return null;
+    }
+
+    // OpenCage uses q=lat+lon format for reverse geocoding
+    const url = `${OPENCAGE_GEOCODING_BASE_URL}?q=${lat}+${lon}&key=${OPENCAGE_API_KEY}&limit=1&no_annotations=1`;
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            if (response.status === 401 || response.status === 402) {
+                console.error("Unauthorized/Quota Exceeded for OpenCage Geocoding API.");
+            } else {
+                const errorBody = await response.text();
+                console.error(`OpenCage Geocoding HTTP error ${response.status}: ${response.statusText}`, errorBody);
+            }
+            return null;
+        }
+        const data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+            const result = data.results[0];
+            const loc: GeoLocation = {
+                name: result.components?.city || result.components?.town || result.components?.village || result.components?.county || result.formatted.split(',')[0],
+                lat: result.geometry?.lat,
+                lon: result.geometry?.lng,
+                country: result.components?.country || '',
+                state: result.components?.state,
+                formatted: result.formatted || '',
+            };
+            // Only return if we have a valid location
+            if (loc.lat != null && loc.lon != null) {
+                return loc;
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error("Failed to reverse geocode via OpenCage:", error);
+        return null;
+    }
+}

@@ -7,6 +7,7 @@ interface WeatherTheme {
     primaryColor: string;
     secondaryColor: string;
     iconTint: string;
+    textColor: string; // Add textColor property
     backgroundGradient: [string, string]; // Array of two color strings
 }
 
@@ -22,6 +23,7 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                     primaryColor: COLORS.blueDark,
                     secondaryColor: COLORS.blueLight,
                     iconTint: COLORS.yellow, // Yellow for sun
+                    textColor: COLORS.white, // White text on blue background
                     // Bright, clear day gradient
                     backgroundGradient: ['#3A84FF', '#6DD5FA'],
                 };
@@ -30,6 +32,7 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                     primaryColor: COLORS.indigo,
                     secondaryColor: '#26D0CE',
                     iconTint: COLORS.white, // Pale yellow for moon/stars
+                    textColor: COLORS.white, // White text on dark background
                     // Deep, clear night gradient
                     backgroundGradient: ['#141E30', '#243B55'],
                 };
@@ -39,6 +42,7 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                     primaryColor: '#5B7E9F', // Gray-Blue
                     secondaryColor: COLORS.gray,
                     iconTint: COLORS.white,
+                    textColor: COLORS.textDark, // Dark text on light gray background
                     // Overcast/Partly Cloudy gradient
                     backgroundGradient: ['#8E9EAB', '#D7D2CC'],
                 };
@@ -48,6 +52,7 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                     primaryColor: COLORS.indigo,
                     secondaryColor: COLORS.slate,
                     iconTint: COLORS.white,
+                    textColor: COLORS.white, // White text on dark background
                     // Rainy/Stormy gradient
                     backgroundGradient: ['#4b6cb7', '#182848'],
                 };
@@ -56,6 +61,7 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                     primaryColor: COLORS.white,
                     secondaryColor: '#B0D9E6',
                     iconTint: COLORS.blueDark,
+                    textColor: COLORS.textDark, // Dark text on light background
                     // Snowy/Winter gradient
                     backgroundGradient: ['#E6E9F0', '#B0D9E6'],
                 };
@@ -63,9 +69,10 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                 return {
                     primaryColor: '#5B7E9F',
                     secondaryColor: COLORS.gray,
-                    iconTint: COLORS.white,
-                    // Windy/Dusty conditions gradient
-                    backgroundGradient: ['#6D6027', '#D3CBB8'],
+                    iconTint: COLORS.white, // Keep icon white for contrast
+                    textColor: COLORS.white, // White text on blue background
+                    // Gray-blue gradient for windy conditions
+                    backgroundGradient: ['#A7BFE8', '#6190E8'], // Lighter blue to a deeper blue
                 };
             default:
                 // Use a safe, guaranteed array of two colors for the default/fallback case
@@ -73,6 +80,7 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                     primaryColor: COLORS.blueDark,
                     secondaryColor: COLORS.blueLight,
                     iconTint: COLORS.yellow,
+                    textColor: COLORS.white,
                     backgroundGradient: ['#3A84FF', '#6DD5FA'],
                 };
         }

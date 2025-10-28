@@ -6,6 +6,7 @@ import { DarkTheme, DefaultTheme } from '@react-navigation/native';
 export const COLORS = {
     blueDark: '#4A90E2',
     blueLight: '#50E3C2',
+    blue: '#007AFF',
     indigo: '#424874',
     slate: '#7D9D9C',
     gray: '#B3BDC8',
@@ -14,11 +15,18 @@ export const COLORS = {
     textLight: '#FFFFFF',
     textDark: '#000000',
     yellow: '#FFFF00',
+    purple: '#b300ffff',
+    orange: '#ff8800ff',
+    red: '#ff0000',
     // Navigation Tabs
     tabActiveTint: '#0A84FF', // A vibrant blue for active elements
     tabInactiveTint: '#8E8E93',
     tabBackgroundLight: '#F0F0F0',
     tabBackgroundDark: '#1E1E1E',
+
+    backgroundLight: '#F0F0F0',
+    backgroundDark: '#1E1E1E',
+
 };
 
 // --- Spacing Constants ---

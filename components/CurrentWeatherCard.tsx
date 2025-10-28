@@ -13,26 +13,26 @@ import { COLORS, SPACING } from "../styles/theme";
 const { width } = Dimensions.get("window");
 
 // A function to map our mock string condition to a system symbol name
-const getSymbolName = (condition: WeatherIcon): any => {
+const getIconName = (condition: WeatherIcon): any => {
   switch (condition) {
     case "sunny":
-      return "sun.max.fill";
+      return "sunny";
     case "clear":
-      return "moon.stars.fill";
+      return "moon";
     case "cloudy":
-      return "cloud.fill";
+      return "cloudy";
     case "partly cloudy":
-      return "cloud.sun.fill";
+      return "partly-sunny";
     case "rainy":
-      return "cloud.rain.fill";
+      return "rainy";
     case "stormy":
-      return "cloud.bolt.fill";
+      return "thunderstorm";
     case "snowy":
-      return "cloud.snow.fill";
+      return "snow";
     case "windy":
-      return "wind";
+      return "flag-outline";
     default:
-      return "cloud.sun.fill";
+      return "partly-sunny";
   }
 };
 
@@ -63,11 +63,10 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
       <View style={styles.mainInfo}>
         {/* Use a prominent icon size and color */}
         <Ionicons
-          name={getSymbolName(data.icon)}
-          type="system"
+          name={getIconName(data.icon)}
           size={width * 0.2}
-          tint={data.icon === "sunny" ? COLORS.blueLight : COLORS.white}
           style={styles.icon}
+          color={data.icon === "sunny" ? COLORS.blueLight : COLORS.white}
         />
         <Text style={styles.temperature}>{data.temperature}°</Text>
       </View>
@@ -81,17 +80,17 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
       {/* Detail Row */}
       <View style={[styles.detailRow, { borderTopColor: detailBorderColor }]}>
         <DetailItem
-          icon="wind"
+          icon="flag-outline"
           label={`${data.windSpeed} m/s`}
           textColor={detailTextColor}
         />
         <DetailItem
-          icon="humidity.fill"
+          icon="water"
           label={`${data.humidity}%`}
           textColor={detailTextColor}
         />
         <DetailItem
-          icon="sun.max"
+          icon="sunny-outline"
           label={`UV ${data.uvIndex}`}
           textColor={detailTextColor}
         />
@@ -108,7 +107,7 @@ interface DetailItemProps {
 
 const DetailItem: React.FC<DetailItemProps> = ({ icon, label, textColor }) => (
   <View style={styles.detailItem}>
-    <Ionicons name={icon} type="system" size={SPACING.md} tint={textColor} />
+    <Ionicons name={icon} size={SPACING.md} color={textColor} />
     <Text style={[styles.detailText, { color: textColor }]}>{label}</Text>
   </View>
 );

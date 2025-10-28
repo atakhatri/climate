@@ -5,22 +5,22 @@ import { HourlyData, WeatherIcon } from "../app/utils/types";
 import { COLORS, SPACING } from "../styles/theme";
 
 // A helper function to map the weather condition to a specific icon
-const getHourlySymbol = (condition: WeatherIcon): any => {
+const getIconName = (condition: WeatherIcon): any => {
   switch (condition) {
     case "sunny":
-      return "sun.max.fill";
+      return "sunny";
     case "clear":
-      return "moon.stars.fill";
+      return "moon";
     case "cloudy":
-      return "cloud.fill";
+      return "cloudy";
     case "partly cloudy":
-      return "cloud.sun.fill";
+      return "partly-sunny";
     case "rainy":
-      return "cloud.rain.fill";
+      return "rainy";
     case "windy":
-      return "wind";
+      return "flag-outline";
     case "stormy":
-      return "cloud.bolt.rain.fill";
+      return "thunderstorm";
     case "snowy":
       return "snow";
     default:
@@ -45,11 +45,10 @@ export const HourlyForecast: React.FC<HourlyForecastProps> = ({ data }) => {
           <View key={index} style={styles.hourItem}>
             <Text style={styles.timeText}>{item.time}</Text>
             <Ionicons
-              name={getHourlySymbol(item.icon)}
-              type="system"
+              name={getIconName(item.icon)}
               size={SPACING.lg}
-              tint={COLORS.white}
               style={styles.icon}
+              color={COLORS.white}
             />
             <Text style={styles.tempText}>{item.temp}°</Text>
           </View>

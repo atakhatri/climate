@@ -5,20 +5,20 @@ import { DailyData, WeatherIcon } from "../app/utils/types";
 import { COLORS, SPACING } from "../styles/theme";
 
 // A helper function to map the weather condition to a specific icon
-const getDailySymbol = (condition: WeatherIcon): any => {
+const getIconName = (condition: WeatherIcon): any => {
   switch (condition) {
     case "sunny":
-      return "sun.max.fill";
+      return "sunny";
     case "clear":
-      return "moon.stars.fill";
+      return "moon";
     case "cloudy":
-      return "cloud.fill";
+      return "cloudy";
     case "rainy":
-      return "cloud.rain.fill";
+      return "rainy";
     case "windy":
-      return "wind";
+      return "flag-outline";
     case "stormy":
-      return "cloud.bolt.fill";
+      return "thunderstorm";
     case "snowy":
       return "snow";
     default:
@@ -47,10 +47,9 @@ export const DailyForecast: React.FC<DailyForecastProps> = ({ data }) => {
 
             <View style={styles.iconContainer}>
               <Ionicons
-                name={getDailySymbol(item.icon)}
-                type="system"
+                name={getIconName(item.icon)}
                 size={SPACING.lg}
-                tint={COLORS.white}
+                color={COLORS.white}
               />
             </View>
 

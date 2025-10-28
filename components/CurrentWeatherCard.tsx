@@ -30,7 +30,7 @@ const getIconName = (condition: WeatherIcon): any => {
     case "snowy":
       return "snow";
     case "windy":
-      return "flag-outline";
+      return "wind";
     default:
       return "partly-sunny";
   }
@@ -51,8 +51,8 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
   const colorScheme = useColorScheme() ?? "light";
 
   // Use a slightly lighter/more transparent version of the theme color for the details row
-  const detailBorderColor = `rgba(255, 255, 255, 0.2)`;
-  const detailTextColor = COLORS.textLight;
+  const detailBorderColor = `rgba(0, 0, 0, 0.2)`;
+  const detailTextColor = COLORS.textDark;
 
   return (
     <View style={styles.card}>
@@ -66,31 +66,35 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
           name={getIconName(data.icon)}
           size={width * 0.2}
           style={styles.icon}
-          color={data.icon === "sunny" ? COLORS.blueLight : COLORS.white}
+          color={data.icon === "sunny" ? COLORS.yellow : COLORS.white}
         />
         <Text style={styles.temperature}>{data.temperature}°</Text>
       </View>
 
       {/* Condition & High/Low */}
       <Text style={styles.condition}>{data.condition}</Text>
-      <Text style={styles.highLow}>
-        H: {data.high}° L: {data.low}°
+      <Text style={styles.high}>
+        H: {data.high}°<Text> - </Text>
+        <Text style={styles.Low}>L: {data.low}°</Text>
       </Text>
 
       {/* Detail Row */}
       <View style={[styles.detailRow, { borderTopColor: detailBorderColor }]}>
         <DetailItem
           icon="flag-outline"
+          coloroficon={COLORS.indigo}
           label={`${data.windSpeed} m/s`}
           textColor={detailTextColor}
         />
         <DetailItem
           icon="water"
+          coloroficon={COLORS.blueDark}
           label={`${data.humidity}%`}
           textColor={detailTextColor}
         />
         <DetailItem
           icon="sunny-outline"
+          coloroficon={"purple"}
           label={`UV ${data.uvIndex}`}
           textColor={detailTextColor}
         />
@@ -101,13 +105,19 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
 
 interface DetailItemProps {
   icon: any;
+  coloroficon: string;
   label: string;
   textColor: string;
 }
 
-const DetailItem: React.FC<DetailItemProps> = ({ icon, label, textColor }) => (
+const DetailItem: React.FC<DetailItemProps> = ({
+  icon,
+  coloroficon,
+  label,
+  textColor,
+}) => (
   <View style={styles.detailItem}>
-    <Ionicons name={icon} size={SPACING.md} color={textColor} />
+    <Ionicons name={icon} size={SPACING.xl} color={coloroficon} />
     <Text style={[styles.detailText, { color: textColor }]}>{label}</Text>
   </View>
 );
@@ -116,23 +126,19 @@ const styles = StyleSheet.create({
   card: {
     width: width * 0.9,
     padding: SPACING.xl,
-    borderRadius: SPACING.xl,
-    backgroundColor: "rgba(255, 255, 255, 0.15)", // Semi-transparent card effect
     alignItems: "center",
     marginBottom: SPACING.xl,
-    marginTop: SPACING.xxl * 2,
+    // marginTop: SPACING.xxl * 2,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 10,
-    elevation: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)", // Subtle border for definition
   },
   location: {
     fontSize: SPACING.lg,
     fontWeight: "600",
-    color: COLORS.textLight,
+    color: COLORS.textDark,
+    marginTop: SPACING.xxl,
     marginBottom: SPACING.xl,
     textShadowColor: "rgba(0, 0, 0, 0.2)",
     textShadowOffset: { width: 1, height: 1 },
@@ -149,7 +155,7 @@ const styles = StyleSheet.create({
   temperature: {
     fontSize: width * 0.25,
     fontWeight: "200",
-    color: COLORS.textLight,
+    color: COLORS.textDark,
     lineHeight: width * 0.25,
     textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 1, height: 2 },
@@ -158,12 +164,18 @@ const styles = StyleSheet.create({
   condition: {
     fontSize: SPACING.lg,
     fontWeight: "500",
-    color: COLORS.textLight,
+    color: COLORS.textDark,
     marginBottom: SPACING.sm,
   },
-  highLow: {
-    fontSize: SPACING.md,
-    color: "rgba(255, 255, 255, 0.7)",
+  high: {
+    fontSize: SPACING.xl - 5,
+    color: "rgba(255, 204, 0, 1)",
+    marginBottom: SPACING.xl,
+  },
+
+  Low: {
+    fontSize: SPACING.xl - 5,
+    color: "rgba(0, 85, 255, 1)",
     marginBottom: SPACING.xl,
   },
   detailRow: {
@@ -171,14 +183,16 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     width: "100%",
     paddingTop: SPACING.md,
+    paddingBottom: SPACING.md,
     borderTopWidth: 1,
   },
   detailItem: {
     alignItems: "center",
   },
   detailText: {
-    fontSize: 14,
+    fontSize: 18,
     marginTop: SPACING.xs,
     fontWeight: "500",
+    color: COLORS.textDark,
   },
 });

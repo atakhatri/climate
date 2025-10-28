@@ -2,15 +2,16 @@ import { useMemo } from 'react';
 import { WeatherIcon } from '../app/utils/types';
 import { COLORS } from '../styles/theme';
 
+// Define a type for the theme to ensure consistency
 interface WeatherTheme {
     primaryColor: string;
     secondaryColor: string;
     iconTint: string;
-    backgroundGradient: [string, string];
+    backgroundGradient: [string, string]; // Array of two color strings
 }
 
 /**
- * Returns thematic colors based on weather condition and time of day (mocked for now).
+ * Returns thematic colors and gradients based on the weather condition (mocked for now).
  * This abstracts the logic for dynamic and beautiful backgrounds.
  */
 export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
@@ -20,15 +21,17 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                 return {
                     primaryColor: COLORS.blueDark,
                     secondaryColor: COLORS.blueLight,
-                    iconTint: '#FFC700', // Yellow
-                    backgroundGradient: [COLORS.blueDark, COLORS.blueLight],
+                    iconTint: COLORS.yellow, // Yellow for sun
+                    // Bright, clear day gradient
+                    backgroundGradient: ['#3A84FF', '#6DD5FA'],
                 };
-            case 'clear':
+            case 'clear': // Typically clear night (using a dark theme)
                 return {
-                    primaryColor: '#1A2980', // Deep Night Blue
-                    secondaryColor: '#26D0CE', // Teal/Cyan
-                    iconTint: '#FFEE99', // Pale yellow for moon/stars
-                    backgroundGradient: ['#1A2980', '#26D0CE'],
+                    primaryColor: COLORS.indigo,
+                    secondaryColor: '#26D0CE',
+                    iconTint: COLORS.white, // Pale yellow for moon/stars
+                    // Deep, clear night gradient
+                    backgroundGradient: ['#141E30', '#243B55'],
                 };
             case 'partly cloudy':
             case 'cloudy':
@@ -36,36 +39,41 @@ export const useWeatherTheme = (condition: WeatherIcon): WeatherTheme => {
                     primaryColor: '#5B7E9F', // Gray-Blue
                     secondaryColor: COLORS.gray,
                     iconTint: COLORS.white,
-                    backgroundGradient: ['#5B7E9F', '#B3BDC8'],
+                    // Overcast/Partly Cloudy gradient
+                    backgroundGradient: ['#8E9EAB', '#D7D2CC'],
                 };
             case 'rainy':
             case 'stormy':
                 return {
-                    primaryColor: COLORS.indigo, // Dark Indigo
+                    primaryColor: COLORS.indigo,
                     secondaryColor: COLORS.slate,
                     iconTint: COLORS.white,
-                    backgroundGradient: [COLORS.indigo, COLORS.slate],
+                    // Rainy/Stormy gradient
+                    backgroundGradient: ['#4b6cb7', '#182848'],
                 };
             case 'snowy':
                 return {
-                    primaryColor: '#B0D9E6', // Light Blue
-                    secondaryColor: COLORS.white,
-                    iconTint: '#FFFFFF',
-                    backgroundGradient: ['#B0D9E6', COLORS.white],
+                    primaryColor: COLORS.white,
+                    secondaryColor: '#B0D9E6',
+                    iconTint: COLORS.blueDark,
+                    // Snowy/Winter gradient
+                    backgroundGradient: ['#E6E9F0', '#B0D9E6'],
                 };
             case 'windy':
                 return {
                     primaryColor: '#5B7E9F',
                     secondaryColor: COLORS.gray,
                     iconTint: COLORS.white,
-                    backgroundGradient: ['#5B7E9F', '#B3BDC8'],
+                    // Windy/Dusty conditions gradient
+                    backgroundGradient: ['#6D6027', '#D3CBB8'],
                 };
             default:
+                // Use a safe, guaranteed array of two colors for the default/fallback case
                 return {
                     primaryColor: COLORS.blueDark,
                     secondaryColor: COLORS.blueLight,
-                    iconTint: '#FFC700',
-                    backgroundGradient: [COLORS.blueDark, COLORS.blueLight],
+                    iconTint: COLORS.yellow,
+                    backgroundGradient: ['#3A84FF', '#6DD5FA'],
                 };
         }
     }, [condition]);

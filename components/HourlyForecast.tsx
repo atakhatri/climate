@@ -28,6 +28,30 @@ const getIconName = (condition: WeatherIcon): any => {
   }
 };
 
+// A helper function to map the weather condition to a specific icon color
+const getIconColor = (condition: WeatherIcon): string => {
+  switch (condition) {
+    case "sunny":
+      return COLORS.yellow;
+    case "windy":
+      return COLORS.indigo;
+    case "rainy":
+      return COLORS.blueDark;
+    case "stormy":
+      return COLORS.slate;
+    case "clear":
+      return COLORS.white;
+    case "snowy":
+      return COLORS.white;
+    case "cloudy":
+      return COLORS.white;
+    case "partly cloudy":
+      return COLORS.white;
+    default:
+      return COLORS.white;
+  }
+};
+
 interface HourlyForecastProps {
   data: HourlyData[];
 }
@@ -48,7 +72,7 @@ export const HourlyForecast: React.FC<HourlyForecastProps> = ({ data }) => {
               name={getIconName(item.icon)}
               size={SPACING.lg}
               style={styles.icon}
-              color={COLORS.white}
+              color={getIconColor(item.icon)}
             />
             <Text style={styles.tempText}>{item.temp}°</Text>
           </View>
@@ -64,36 +88,37 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
     borderRadius: SPACING.xl,
-    backgroundColor: "rgba(255, 255, 255, 0.15)", // Semi-transparent card
+    // backgroundColor: "rgba(255, 255, 255, 0.15)", // Semi-transparent card
     marginBottom: SPACING.lg,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 8,
+    // shadowColor: COLORS.black,
+    // shadowOffset: { width: 0, height: 4 },
+    // shadowOpacity: 0.25,
+    // shadowRadius: 5,
+    // elevation: 8,
   },
   title: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.textLight,
+    fontSize: 20,
+    fontWeight: "900",
+    color: COLORS.textDark,
     marginBottom: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.2)",
     paddingBottom: SPACING.sm,
-    paddingLeft: SPACING.xs,
+    paddingLeft: SPACING.sm,
   },
   scrollContent: {
-    paddingHorizontal: SPACING.sm,
+    // paddingHorizontal: SPACING.sm,
     paddingTop: SPACING.sm,
+    paddingBottom: SPACING.md,
+    borderBottomColor: "black",
+    borderBottomWidth: 1,
   },
   hourItem: {
-    alignItems: "center",
+    alignItems: "baseline",
     paddingHorizontal: SPACING.md,
     minWidth: 70,
   },
   timeText: {
     fontSize: 14,
-    color: "rgba(255, 255, 255, 0.7)",
+    color: "#000000",
     marginBottom: SPACING.sm,
   },
   icon: {
@@ -102,6 +127,6 @@ const styles = StyleSheet.create({
   tempText: {
     fontSize: 18,
     fontWeight: "600",
-    color: COLORS.textLight,
+    color: COLORS.black,
   },
 });

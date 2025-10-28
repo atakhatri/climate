@@ -26,6 +26,29 @@ const getIconName = (condition: WeatherIcon): any => {
   }
 };
 
+const getIconColor = (condition: WeatherIcon): string => {
+  switch (condition) {
+    case "sunny":
+      return COLORS.yellow;
+    case "windy":
+      return COLORS.indigo;
+    case "rainy":
+      return COLORS.blueDark;
+    case "stormy":
+      return COLORS.slate;
+    case "clear":
+      return COLORS.white;
+    case "snowy":
+      return COLORS.white;
+    case "cloudy":
+      return COLORS.white;
+    case "partly cloudy":
+      return COLORS.white;
+    default:
+      return COLORS.white;
+  }
+};
+
 interface DailyForecastProps {
   data: DailyData[];
 }
@@ -49,7 +72,7 @@ export const DailyForecast: React.FC<DailyForecastProps> = ({ data }) => {
               <Ionicons
                 name={getIconName(item.icon)}
                 size={SPACING.lg}
-                color={COLORS.white}
+                color={getIconColor(item.icon)}
               />
             </View>
 
@@ -66,26 +89,18 @@ export const DailyForecast: React.FC<DailyForecastProps> = ({ data }) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: "90%",
+    width: "100%",
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
     borderRadius: SPACING.xl,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
-    elevation: 8,
   },
   title: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: COLORS.textLight,
+    fontSize: 20,
+    fontWeight: "900",
+    color: COLORS.textDark,
     marginBottom: SPACING.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.2)",
     paddingBottom: SPACING.sm,
-    paddingLeft: SPACING.xs,
+    paddingLeft: SPACING.sm,
   },
   list: {
     width: "100%",
@@ -97,15 +112,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.1)",
+    borderBottomColor: "rgba(255, 255, 255, 0.5)",
   },
   lastItem: {
     borderBottomWidth: 0,
   },
   dayText: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: COLORS.textLight,
+    fontSize: 18,
+    fontWeight: "600",
+    color: COLORS.black,
     flex: 1,
   },
   iconContainer: {
@@ -118,16 +133,16 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   highTemp: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "600",
-    color: COLORS.textLight,
+    color: "rgba(255, 204, 0, 1)",
     minWidth: 40,
     textAlign: "right",
   },
   lowTemp: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "500",
-    color: "rgba(255, 255, 255, 0.6)",
+    color: "rgba(0, 102, 255, 1)",
     minWidth: 40,
     textAlign: "right",
   },

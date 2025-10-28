@@ -4,7 +4,7 @@ export const MOCK_WEATHER_DATA: CurrentWeather = {
     location: 'Vadodara, India',
     temperature: 29,
     condition: 'Partly Cloudy',
-    icon: 'cloudy', // Use the new type
+    icon: 'sunny', // Use the new type
     high: 34,
     low: 21,
     windSpeed: 8,

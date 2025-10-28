@@ -18,11 +18,6 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: tabBackground,
-          borderTopWidth: 0,
-          elevation: 10, // Shadow for Android
-          shadowColor: COLORS.black, // Shadow for iOS
-          shadowOpacity: 0.1,
-          shadowRadius: 5,
         },
       }}
     >

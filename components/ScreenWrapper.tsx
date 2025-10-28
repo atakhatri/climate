@@ -1,43 +1,47 @@
-import React from "react";
-import { StatusBar, StyleSheet, View, ViewStyle } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import React, { FC, ReactNode } from "react";
+import { StyleSheet, View, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface ScreenWrapperProps {
-  children: React.ReactNode;
-  backgroundColor: string;
+  children: ReactNode;
   style?: ViewStyle;
+  // Set a safe default value for gradientColors just in case, though the hook should handle it.
+  // The structure `gradientColors: [string, string] | undefined` forces default handling here.
+  gradientColors: [string, string];
 }
 
 /**
- * Ensures consistent safe area handling and applies a theme background.
- * Uses a SafeAreaView from the top edge only, allowing content to bleed below the tab bar.
+ * A wrapper for all screens providing safe area handling and a dynamic linear gradient background.
  */
-export const ScreenWrapper: React.FC<ScreenWrapperProps> = ({
+export const ScreenWrapper: FC<ScreenWrapperProps> = ({
   children,
-  backgroundColor,
   style,
+  // Add a defensive default fallback (though TypeScript should enforce this)
+  gradientColors = ["#00a6ffff", "#cdf7ffff"],
 }) => {
-  // Set status bar based on background luminosity
-  const isDark = parseInt(backgroundColor.slice(1, 7), 16) > 0xffffff / 2;
-  const barStyle = isDark ? "dark-content" : "light-content";
-
   return (
-    <SafeAreaView
-      edges={["top"]}
-      style={[styles.safeArea, { backgroundColor }]}
+    // Check for null/undefined just to be absolutely safe, though we rely on TS to guarantee it.
+    <LinearGradient
+      // Ensure colors is always an array with at least two elements
+      colors={gradientColors}
+      style={[styles.container, style]}
     >
-      <StatusBar barStyle={barStyle} />
-      <View style={[styles.container, style]}>{children}</View>
-    </SafeAreaView>
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.content}>{children}</View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
   safeArea: {
     flex: 1,
   },
-  container: {
+  content: {
     flex: 1,
-    // Add consistent padding or remove based on how components handle spacing
   },
 });

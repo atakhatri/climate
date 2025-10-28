@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     alignItems: "center",
-    paddingVertical: 20,
-    paddingBottom: 100, // Space for the tab bar
+    // paddingVertical: 20,
+    // paddingBottom: 100, // Space for the tab bar
   },
 });

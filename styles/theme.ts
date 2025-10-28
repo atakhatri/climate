@@ -13,6 +13,7 @@ export const COLORS = {
     black: '#000000',
     textLight: '#FFFFFF',
     textDark: '#000000',
+    yellow: '#FFFF00',
     // Navigation Tabs
     tabActiveTint: '#0A84FF', // A vibrant blue for active elements
     tabInactiveTint: '#8E8E93',

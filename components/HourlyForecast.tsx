@@ -1,42 +1,23 @@
-import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { getIconNameFromCondition } from "../app/services/weatherService"; // Import the centralized function
-import { HourlyData, WeatherIcon } from "../app/utils/types";
-import { COLORS, SPACING } from "../styles/theme";
+import { HourlyData } from "../app/utils/types";
+import { SPACING } from "../styles/theme";
+import { WeatherIconComponent } from "./WeatherIcon"; // Import the new component
 
-// REMOVED getIconName and getIconColor - using centralized versions
-
-// A helper function to map the weather condition to a specific icon color
-const getIconColor = (condition: WeatherIcon): string => {
-  // Simple color mapping, can be expanded
-  switch (condition) {
-    case "sunny":
-      return COLORS.yellow;
-    case "clear": // Night clear
-      return COLORS.white; // Or a pale yellow
-    case "rainy":
-    case "stormy":
-      return COLORS.blueDark;
-    case "snowy":
-      return COLORS.white;
-    case "windy":
-      return COLORS.slate;
-    case "cloudy":
-    case "partly cloudy":
-    default:
-      return COLORS.white;
-  }
-};
+// Remove getIconName and getIconColor
 
 interface HourlyForecastProps {
   data: HourlyData[];
+  textColor: string;
 }
 
-export const HourlyForecast: React.FC<HourlyForecastProps> = ({ data }) => {
+export const HourlyForecast: React.FC<HourlyForecastProps> = ({
+  data,
+  textColor,
+}) => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Hourly Forecast</Text>
+      <Text style={[styles.title, { color: textColor }]}>Hourly Forecast</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -44,14 +25,19 @@ export const HourlyForecast: React.FC<HourlyForecastProps> = ({ data }) => {
       >
         {data.map((item, index) => (
           <View key={index} style={styles.hourItem}>
-            <Text style={styles.timeText}>{item.time}</Text>
-            <Ionicons
-              name={getIconNameFromCondition(item.icon)} // Use centralized function
-              size={SPACING.lg}
+            <Text style={[styles.timeText, { color: textColor }]}>
+              {item.time}
+            </Text>
+            {/* Use WeatherIconComponent */}
+            <WeatherIconComponent
+              condition={item.icon}
+              isDay={item.isDay} // Pass isDay flag
+              size={SPACING.xxl + 4} // Adjust size
               style={styles.icon}
-              color={getIconColor(item.icon)} // Use color function
             />
-            <Text style={styles.tempText}>{item.temp}°</Text>
+            <Text style={[styles.tempText, { color: textColor }]}>
+              {item.temp}°
+            </Text>
           </View>
         ))}
       </ScrollView>
@@ -62,46 +48,40 @@ export const HourlyForecast: React.FC<HourlyForecastProps> = ({ data }) => {
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    paddingHorizontal: SPACING.md, // Horizontal padding for the title section
-    marginBottom: SPACING.lg,
-    // Removed background/shadow - let ScreenWrapper handle background
+    paddingVertical: SPACING.sm, // Reduced vertical padding
+    paddingHorizontal: SPACING.md,
+    // backgroundColor: "rgba(255, 255, 255, 0.1)", // Optional subtle background
+    borderRadius: SPACING.md,
+    marginBottom: SPACING.md,
   },
   title: {
-    fontSize: 18, // Slightly smaller title
-    fontWeight: "700", // Bolder title
-    color: COLORS.textLight, // White text for contrast
-    marginBottom: SPACING.sm,
-    paddingLeft: SPACING.xs, // Minimal left padding for title
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    fontSize: 20, // Slightly smaller title
+    fontWeight: "900", // Bolder
+    // color: COLORS.textDark, // Ensure contrast
+    marginBottom: SPACING.xs,
+    paddingLeft: SPACING.xs,
   },
   scrollContent: {
-    paddingVertical: SPACING.md, // Vertical padding for the scroll area
-    paddingLeft: SPACING.xs, // Start padding for the first item
-    paddingRight: SPACING.md, // End padding for the last item
+    paddingVertical: SPACING.sm, // Add vertical padding
   },
   hourItem: {
     alignItems: "center", // Center items vertically
-    marginHorizontal: SPACING.sm, // Spacing between items
-    minWidth: 60, // Ensure items have some minimum width
-    paddingVertical: SPACING.xs,
-    // Add a subtle background to each item if needed, e.g.,
-    // backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    // borderRadius: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    minWidth: 65, // Adjust width if needed
   },
   timeText: {
-    fontSize: 14,
-    fontWeight: "500", // Medium weight for time
-    color: COLORS.textLight, // White text
-    marginBottom: SPACING.xs, // Reduced margin
+    fontSize: 16,
+    // color: COLORS.textDark, // Ensure contrast
+    marginBottom: SPACING.xs, // Reduce margin
+    fontWeight: "700",
   },
   icon: {
-    marginBottom: SPACING.xs, // Reduced margin
+    marginBottom: SPACING.lg, // Reduce margin
+    height: SPACING.lg + 4, // Explicit height can help alignment
   },
   tempText: {
-    fontSize: 18, // Larger temp text
-    fontWeight: "600", // Semi-bold temp
-    color: COLORS.textLight, // White text
+    fontSize: 18, // Slightly smaller temp
+    fontWeight: "800",
+    // color: COLORS.indigo, // Ensure contrast
   },
 });

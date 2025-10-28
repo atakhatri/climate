@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router"; // Import useRouter
-import React, { useCallback, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router"; // Import useRouter and useFocusEffect
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,13 +12,18 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS, SPACING } from "../../styles/theme";
+import {
+  addFavorite,
+  getFavorites,
+  removeFavorite,
+} from "../services/favoritesService"; // Import favorite services
 import { GeoLocation, searchCities } from "../services/weatherService"; // Import search function and type
 
 // Debounce hook (simple implementation)
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedValue(value);
     }, delay);
@@ -31,17 +36,76 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
+// Helper component for rendering a location item (search result or favorite)
+interface LocationListItemProps {
+  item: GeoLocation;
+  onPress: (item: GeoLocation) => void;
+  onToggleFavorite?: (item: GeoLocation) => void; // For search results
+  onRemoveFavorite?: (item: GeoLocation) => void; // For favorites list
+  isFavorite?: boolean;
+}
+
+const LocationListItem: React.FC<LocationListItemProps> = ({
+  item,
+  onPress,
+  onToggleFavorite,
+  onRemoveFavorite,
+  isFavorite,
+}) => (
+  <TouchableOpacity style={styles.resultItem} onPress={() => onPress(item)}>
+    <View style={styles.itemTextContainer}>
+      <Text style={styles.resultName}>{item.name}</Text>
+      <Text style={styles.resultDetails}>
+        {item.formatted ||
+          `${item.state ? `${item.state}, ` : ""}${item.country}`}
+      </Text>
+    </View>
+    {onToggleFavorite && (
+      <TouchableOpacity
+        onPress={() => onToggleFavorite(item)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons
+          name={isFavorite ? "star" : "star-outline"}
+          size={24}
+          color={isFavorite ? COLORS.yellow : COLORS.gray}
+        />
+      </TouchableOpacity>
+    )}
+    {onRemoveFavorite && (
+      <TouchableOpacity
+        onPress={() => onRemoveFavorite(item)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <Ionicons name="trash-bin" size={24} color={COLORS.red} />
+      </TouchableOpacity>
+    )}
+  </TouchableOpacity>
+);
+
 export default function CitiesScreen() {
-  const router = useRouter(); // Initialize router
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<GeoLocation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<GeoLocation[]>([]); // State for favorites
 
-  const debouncedSearchQuery = useDebounce(searchQuery, 500); // Debounce search input by 500ms
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
+  // Load favorites when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const loadFavorites = async () => {
+        const savedFavorites = await getFavorites();
+        setFavorites(savedFavorites);
+      };
+      loadFavorites();
+    }, [])
+  );
 
   // Effect to trigger search when debounced query changes
-  React.useEffect(() => {
+  useEffect(() => {
     const performSearch = async () => {
       if (debouncedSearchQuery.trim().length < 2) {
         setResults([]);
@@ -72,36 +136,63 @@ export default function CitiesScreen() {
   // Handle selecting a city
   const handleSelectCity = useCallback(
     (city: GeoLocation) => {
-      console.log("Selected city:", city);
-      // TODO: Implement navigation or state update to show weather for this city
-      // Example using router to navigate back to index with params (needs index.tsx adjustment)
       router.push({
         pathname: "/", // Navigate to the home tab
         params: { lat: city.lat, lon: city.lon, name: city.name },
       });
-      // Reset search after selection
-      setSearchQuery("");
-      setResults([]);
-      setError(null);
     },
     [router]
   );
 
-  const renderResultItem = ({ item }: { item: GeoLocation }) => (
-    <TouchableOpacity
-      style={styles.resultItem}
-      onPress={() => handleSelectCity(item)}
-    >
-      <Text style={styles.resultName}>{item.name}</Text>
-      <Text style={styles.resultDetails}>
-        {item.state ? `${item.state}, ` : ""}
-        {item.country}
-      </Text>
-    </TouchableOpacity>
-  );
+  const handleToggleFavorite = async (location: GeoLocation) => {
+    const isFav = favorites.some(
+      (fav) => fav.lat === location.lat && fav.lon === location.lon
+    );
+    if (isFav) {
+      await removeFavorite(location);
+    } else {
+      await addFavorite(location);
+    }
+    setFavorites(await getFavorites()); // Refresh favorites list
+  };
+
+  const handleRemoveFavorite = async (location: GeoLocation) => {
+    await removeFavorite(location);
+    setFavorites(await getFavorites()); // Refresh favorites list
+  };
+
+  const renderItem = ({ item }: { item: GeoLocation }) => {
+    const isFav = favorites.some(
+      (fav) => fav.lat === item.lat && fav.lon === item.lon
+    );
+    // If search query is active, render with toggle favorite
+    if (searchQuery.trim().length > 0) {
+      return (
+        <LocationListItem
+          item={item}
+          onPress={handleSelectCity}
+          onToggleFavorite={handleToggleFavorite}
+          isFavorite={isFav}
+        />
+      );
+    } else {
+      // If search query is empty, render favorites with remove option
+      return (
+        <LocationListItem
+          item={item}
+          onPress={handleSelectCity}
+          onRemoveFavorite={handleRemoveFavorite}
+          isFavorite={true} // Always true for items in the favorites list
+        />
+      );
+    }
+  };
+
+  const showFavorites = searchQuery.trim().length === 0;
+  const listData = showFavorites ? favorites : results;
+  const showEmptyState = !loading && !error && listData.length === 0;
 
   return (
-    // Use SafeAreaView to avoid notch/status bar overlap
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.searchContainer}>
@@ -140,17 +231,36 @@ export default function CitiesScreen() {
 
         {!loading && error && <Text style={styles.errorText}>{error}</Text>}
 
-        {!loading && !error && results.length > 0 && (
-          <FlatList
-            data={results}
-            renderItem={renderResultItem}
-            keyExtractor={(item) => `${item.lat}-${item.lon}-${item.name}`} // More unique key
-            style={styles.resultsList}
-            keyboardShouldPersistTaps="handled" // Dismiss keyboard on tap outside input when list is shown
-          />
+        {showEmptyState && (
+          <View style={styles.emptyContainer}>
+            <Ionicons name="star-outline" size={60} color={COLORS.gray} />
+            <Text style={styles.emptyText}>
+              {showFavorites ? "No Favorite Locations" : "No cities found."}
+            </Text>
+            <Text style={styles.emptySubText}>
+              {showFavorites
+                ? "Search for a city and tap the star to add it to your favorites."
+                : "Try a different search term."}
+            </Text>
+          </View>
         )}
 
-        {/* Optional: Add section for saved cities later */}
+        {!loading && !error && listData.length > 0 && (
+          <FlatList
+            data={listData}
+            renderItem={renderItem}
+            keyExtractor={(item) => `${item.lat}-${item.lon}-${item.name}`}
+            style={styles.resultsList}
+            keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={
+              showFavorites && favorites.length > 0 ? (
+                <Text style={styles.favoritesHeader}>
+                  Your Favorite Locations
+                </Text>
+              ) : null
+            }
+          />
+        )}
       </View>
     </SafeAreaView>
   );
@@ -159,7 +269,7 @@ export default function CitiesScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.tabBackgroundLight, // Match tab bar background or choose another
+    backgroundColor: COLORS.backgroundLight, // Use a consistent background
   },
   container: {
     flex: 1,
@@ -174,7 +284,7 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.gray,
-    height: 45, // Fixed height for search bar
+    height: 45,
   },
   searchIcon: {
     marginRight: SPACING.sm,
@@ -183,7 +293,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     color: COLORS.textDark,
-    height: "100%", // Take full height of container
+    height: "100%",
   },
   clearIconContainer: {
     paddingLeft: SPACING.sm,
@@ -194,18 +304,22 @@ const styles = StyleSheet.create({
   errorText: {
     marginTop: SPACING.md,
     textAlign: "center",
-    color: "red", // Or use a theme color for errors
+    color: COLORS.red,
     fontSize: 14,
   },
   resultsList: {
-    flex: 1, // Allow list to take remaining space
+    flex: 1,
   },
   resultItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: SPACING.sm + 2,
     paddingHorizontal: SPACING.sm,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: COLORS.gray,
   },
+  itemTextContainer: { flex: 1, marginRight: SPACING.md },
   resultName: {
     fontSize: 16,
     fontWeight: "500",
@@ -213,6 +327,26 @@ const styles = StyleSheet.create({
   },
   resultDetails: {
     fontSize: 14,
-    color: COLORS.slate, // Use a secondary color
+    color: COLORS.slate,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: SPACING.lg,
+  },
+  emptyText: { fontSize: 20, fontWeight: "bold", color: COLORS.textDark },
+  emptySubText: {
+    fontSize: 16,
+    color: COLORS.gray,
+    marginTop: SPACING.sm,
+    textAlign: "center",
+  },
+  favoritesHeader: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: COLORS.textDark,
+    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.sm,
   },
 });

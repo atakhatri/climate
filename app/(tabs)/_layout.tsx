@@ -1,51 +1,31 @@
+// app/(tabs)/_layout.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { useColorScheme } from "react-native";
-import { COLORS } from "../../styles/theme"; // Import centralized colors
+import React from "react";
+import { CustomTabBar } from "../../components/CustomTabBar";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme() ?? "light";
-  const tabBackground =
-    colorScheme === "dark"
-      ? COLORS.tabBackgroundDark
-      : COLORS.tabBackgroundLight;
-
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: COLORS.tabActiveTint,
-        tabBarInactiveTintColor: COLORS.tabInactiveTint,
-        headerShown: false,
-        tabBarStyle: {
-          backgroundColor: tabBackground,
-        },
-      }}
-    >
-      {/* Home Screen Tab (Current Weather) */}
+    <Tabs tabBar={(props) => <CustomTabBar {...props} />}>
       <Tabs.Screen
         name="index"
         options={{
+          headerShown: false, // Hide header for the index page
           title: "Home",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "cloud" : "cloud-outline"}
-              size={26}
-              color={color}
-            />
+          // The icon is now handled by CustomTabBar, but we can keep this for accessibility
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="cloud" size={24} color={color} />
           ),
         }}
       />
-      {/* Cities/Search Screen Tab */}
       <Tabs.Screen
-        name="cities"
+        name="cities" // Changed to cities
         options={{
-          title: "Cities",
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? "list" : "list-outline"}
-              size={26}
-              color={color}
-            />
+          title: "Search", // Changed title
+          headerShown: false, // No header for search screen, we'll manage it internally
+          // The icon is now handled by CustomTabBar
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="search" size={24} color={color} /> // Changed icon
           ),
         }}
       />

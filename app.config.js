@@ -2,8 +2,9 @@ import "dotenv/config"; // Import dotenv to load .env variables
 
 export default {
   expo: {
+    owner: "ata_khatri",
     name: "climate",
-    slug: "climate",
+    slug: "climate-k15lufox7hpj4mp7ius-",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -11,6 +12,7 @@ export default {
     userInterfaceStyle: "automatic",
     newArchEnabled: true,
     ios: {
+      bundleIdentifier: "com.ata_khatri.climate",
       supportsTablet: true,
       config: {
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY,
@@ -60,7 +62,7 @@ export default {
       openCageApiKey: process.env.OPENCAGE_API_KEY,
       weatherApiKey: process.env.WEATHERAPI_API_KEY,
       eas: {
-        projectId: "278f04fd-7c69-4a88-a132-81202c3ccaf2",
+        projectId: "60ac55cb-4fce-44b1-a273-972de226f118",
       },
     },
   },

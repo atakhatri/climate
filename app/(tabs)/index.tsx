@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from "expo-router"; // Import hook to get parameters
 import React, { useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, Text } from "react-native";
 import { CurrentWeatherCard } from "../../components/CurrentWeatherCard";
@@ -5,20 +6,32 @@ import { DailyForecast } from "../../components/DailyForecast";
 import { HourlyForecast } from "../../components/HourlyForecast";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
 import { useWeatherTheme } from "../../hooks/useWeatherTheme";
-import { COLORS } from "../../styles/theme";
-import { fetchWeatherData } from "../services/weatherService"; // Import the API service
-import { CurrentWeather } from "../utils/types"; // Import the type
+import { COLORS, SPACING } from "../../styles/theme";
+import { fetchWeatherData } from "../services/weatherService";
+import { CurrentWeather } from "../utils/types";
 
-// Coordinates for Vadodara, India
-const VADODARA_LAT = 22.3072;
-const VADODARA_LON = 73.1812;
+// Default Coordinates for Vadodara, India (fallback)
+const DEFAULT_LAT = 22.3072;
+const DEFAULT_LON = 73.1812;
+const DEFAULT_NAME = "Vadodara";
 
 export default function Index() {
+  // Get lat, lon, name from navigation parameters if they exist
+  const params = useLocalSearchParams<{
+    lat?: string;
+    lon?: string;
+    name?: string;
+  }>();
+  const currentLat = params.lat ? parseFloat(params.lat) : DEFAULT_LAT;
+  const currentLon = params.lon ? parseFloat(params.lon) : DEFAULT_LON;
+  // Use the name from params if available, otherwise use default or derive later
+  const initialLocationName = params.name || DEFAULT_NAME;
+
   const [weatherData, setWeatherData] = useState<CurrentWeather | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Use the custom hook to get thematic styles - provide a default icon
+  // Use the custom hook - provide a default icon initially
   const { primaryColor, backgroundGradient } = useWeatherTheme(
     weatherData?.icon ?? "sunny"
   );
@@ -27,21 +40,25 @@ export default function Index() {
     const loadWeather = async () => {
       setLoading(true);
       setError(null);
-      const data = await fetchWeatherData(VADODARA_LAT, VADODARA_LON);
+      console.log(`Fetching weather for: Lat=${currentLat}, Lon=${currentLon}`); // Log coordinates being used
+      const data = await fetchWeatherData(currentLat, currentLon);
+
       if (data) {
-        setWeatherData(data);
+        // If a name was passed via params, use it directly. Otherwise use API's derived name.
+        const finalLocationName =
+          params.name || data.location || "Current Location";
+        setWeatherData({ ...data, location: finalLocationName });
       } else {
         setError(
-          "Failed to fetch weather data. Please check your API key and network connection."
+          "Failed to fetch weather data. Please check your API key/network or try searching again."
         );
-        // Keep showing mock data or some default state if API fails
-        // setWeatherData(MOCK_WEATHER_DATA); // Or set to null/empty state
       }
       setLoading(false);
     };
 
     loadWeather();
-  }, []); // Empty dependency array means this runs once on mount
+    // Re-run useEffect if lat/lon parameters change
+  }, [currentLat, currentLon, params.name]); // Add params.name to ensure location updates
 
   if (loading) {
     return (
@@ -57,7 +74,7 @@ export default function Index() {
     return (
       <ScreenWrapper gradientColors={backgroundGradient} style={styles.center}>
         <Text style={styles.errorText}>
-          Weather data unavailable. Please configure API Key.
+          Weather data unavailable. Please configure API Key or select a city.
         </Text>
       </ScreenWrapper>
     );
@@ -76,10 +93,11 @@ export default function Index() {
 
   // Ensure weatherData is not null before rendering components that need it
   if (!weatherData) {
-    // This case should ideally be covered by loading/error states, but acts as a failsafe
     return (
       <ScreenWrapper gradientColors={backgroundGradient} style={styles.center}>
-        <Text style={styles.errorText}>Something went wrong.</Text>
+        <Text style={styles.errorText}>
+          Something went wrong displaying weather.
+        </Text>
       </ScreenWrapper>
     );
   }
@@ -95,8 +113,9 @@ export default function Index() {
       >
         {/* Main Weather Card */}
         <CurrentWeatherCard
-          data={weatherData} // Pass only the relevant part
-          themePrimaryColor={primaryColor} // Use theme color from hook
+          // Use the potentially overridden location name
+          data={{ ...weatherData, location: weatherData.location }}
+          themePrimaryColor={primaryColor}
         />
 
         {/* Hourly Forecast Section */}
@@ -109,28 +128,30 @@ export default function Index() {
   );
 }
 
+// Styles remain largely the same, minor adjustments below
 const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
   },
   scrollContent: {
     alignItems: "center",
-    paddingBottom: 40, // More space at the bottom
+    paddingBottom: SPACING.xxl, // Increased bottom padding
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+    padding: SPACING.md, // Add padding for error/loading messages
   },
   loadingText: {
-    marginTop: 10,
+    marginTop: SPACING.sm, // Consistent spacing
     color: COLORS.white,
     fontSize: 16,
   },
   errorText: {
-    color: COLORS.textDark, // Use dark text on light error background
+    color: COLORS.white, // Use white text on error gradient background too
     fontSize: 16,
     textAlign: "center",
-    paddingHorizontal: 20,
+    paddingHorizontal: SPACING.lg, // More horizontal padding
   },
 });

@@ -57,11 +57,15 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
   return (
     <View style={styles.card}>
       {/* Location */}
-      <Text style={styles.location}>{data.location}</Text>
+
+      <Text style={styles.location}>
+        <Ionicons name="location" size={24} color={COLORS.blueLight} />
+        {data.location}
+      </Text>
 
       {/* Icon and Temperature */}
       <View style={styles.mainInfo}>
-        {/* Use a prominent icon size and color */}
+        {/* Use a prominent icon  and color */}
         <Ionicons
           name={getIconName(data.icon)}
           size={width * 0.2}
@@ -124,7 +128,7 @@ const DetailItem: React.FC<DetailItemProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    width: width * 0.9,
+    width: width * 1,
     padding: SPACING.xl,
     alignItems: "center",
     marginBottom: SPACING.xl,

@@ -84,7 +84,7 @@ export const HourlyForecast: React.FC<HourlyForecastProps> = ({ data }) => {
 
 const styles = StyleSheet.create({
   container: {
-    width: "90%",
+    width: "100%",
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.md,
     borderRadius: SPACING.xl,

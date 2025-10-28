@@ -7,34 +7,13 @@ import {
   useColorScheme,
   View,
 } from "react-native";
-import { CurrentWeather, WeatherIcon } from "../app/utils/types";
+import { getIconNameFromCondition } from "../app/services/weatherService"; // Import the centralized function
+import { CurrentWeather } from "../app/utils/types";
 import { COLORS, SPACING } from "../styles/theme";
 
 const { width } = Dimensions.get("window");
 
-// A function to map our mock string condition to a system symbol name
-const getIconName = (condition: WeatherIcon): any => {
-  switch (condition) {
-    case "sunny":
-      return "sunny";
-    case "clear":
-      return "moon";
-    case "cloudy":
-      return "cloudy";
-    case "partly cloudy":
-      return "partly-sunny";
-    case "rainy":
-      return "rainy";
-    case "stormy":
-      return "thunderstorm";
-    case "snowy":
-      return "snow";
-    case "windy":
-      return "wind";
-    default:
-      return "partly-sunny";
-  }
-};
+// REMOVED getIconName function - using centralized one from service
 
 // Interface for the data passed to the card
 interface CardData extends Omit<CurrentWeather, "hourly" | "daily"> {}
@@ -52,53 +31,58 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
 
   // Use a slightly lighter/more transparent version of the theme color for the details row
   const detailBorderColor = `rgba(0, 0, 0, 0.2)`;
-  const detailTextColor = COLORS.textDark;
+  // Use white text for better contrast on potentially dark backgrounds
+  const detailTextColor = COLORS.textLight;
+  const mainTextColor = COLORS.textLight; // Use white for main text as well
 
   return (
     <View style={styles.card}>
       {/* Location */}
 
-      <Text style={styles.location}>
-        <Ionicons name="location" size={24} color={COLORS.blueLight} />
+      <Text style={[styles.location, { color: mainTextColor }]}>
+        <Ionicons name="location" size={24} color={COLORS.white} />{" "}
         {data.location}
       </Text>
 
       {/* Icon and Temperature */}
       <View style={styles.mainInfo}>
-        {/* Use a prominent icon  and color */}
+        {/* Use a prominent icon and color */}
         <Ionicons
-          name={getIconName(data.icon)}
+          name={getIconNameFromCondition(data.icon)} // Use centralized function
           size={width * 0.2}
           style={styles.icon}
           color={data.icon === "sunny" ? COLORS.yellow : COLORS.white}
         />
-        <Text style={styles.temperature}>{data.temperature}°</Text>
+        <Text style={[styles.temperature, { color: mainTextColor }]}>
+          {data.temperature}°
+        </Text>
       </View>
 
       {/* Condition & High/Low */}
-      <Text style={styles.condition}>{data.condition}</Text>
-      <Text style={styles.high}>
-        H: {data.high}°<Text> - </Text>
-        <Text style={styles.Low}>L: {data.low}°</Text>
+      <Text style={[styles.condition, { color: mainTextColor }]}>
+        {data.condition}
+      </Text>
+      <Text style={[styles.highLowText, { color: mainTextColor }]}>
+        H: {data.high}° L: {data.low}°
       </Text>
 
       {/* Detail Row */}
       <View style={[styles.detailRow, { borderTopColor: detailBorderColor }]}>
         <DetailItem
           icon="flag-outline"
-          coloroficon={COLORS.indigo}
+          coloroficon={COLORS.white}
           label={`${data.windSpeed} m/s`}
           textColor={detailTextColor}
         />
         <DetailItem
           icon="water"
-          coloroficon={COLORS.blueDark}
+          coloroficon={COLORS.white}
           label={`${data.humidity}%`}
           textColor={detailTextColor}
         />
         <DetailItem
           icon="sunny-outline"
-          coloroficon={"purple"}
+          coloroficon={COLORS.white}
           label={`UV ${data.uvIndex}`}
           textColor={detailTextColor}
         />
@@ -121,82 +105,83 @@ const DetailItem: React.FC<DetailItemProps> = ({
   textColor,
 }) => (
   <View style={styles.detailItem}>
-    <Ionicons name={icon} size={SPACING.xl} color={coloroficon} />
+    <Ionicons name={icon} size={SPACING.lg} color={coloroficon} />
     <Text style={[styles.detailText, { color: textColor }]}>{label}</Text>
   </View>
 );
 
 const styles = StyleSheet.create({
   card: {
-    width: width * 1,
-    padding: SPACING.xl,
+    width: width * 1, // Take full width
+    paddingVertical: SPACING.xl,
+    paddingHorizontal: SPACING.lg, // Use consistent padding
     alignItems: "center",
-    marginBottom: SPACING.xl,
-    // marginTop: SPACING.xxl * 2,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
+    marginBottom: SPACING.md, // Reduced margin
+    marginTop: SPACING.lg, // Add some top margin
+    // Removed background color and shadow - handled by ScreenWrapper gradient
   },
   location: {
-    fontSize: SPACING.lg,
+    fontSize: SPACING.lg, // Slightly smaller
     fontWeight: "600",
-    color: COLORS.textDark,
-    marginTop: SPACING.xxl,
-    marginBottom: SPACING.xl,
-    textShadowColor: "rgba(0, 0, 0, 0.2)",
+    // color handled dynamically
+    marginTop: SPACING.md, // Adjusted margin
+    marginBottom: SPACING.md, // Adjusted margin
+    textShadowColor: "rgba(0, 0, 0, 0.3)", // Slightly darker shadow
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    textShadowRadius: 3, // Slightly larger radius
   },
   mainInfo: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: SPACING.sm,
+    marginBottom: SPACING.xs, // Reduced margin
   },
   icon: {
-    marginRight: SPACING.sm,
+    marginRight: SPACING.xs, // Reduced margin
+    // Add shadow to icon for depth
+    textShadowColor: "rgba(0, 0, 0, 0.4)",
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
   temperature: {
-    fontSize: width * 0.25,
-    fontWeight: "200",
-    color: COLORS.textDark,
-    lineHeight: width * 0.25,
-    textShadowColor: "rgba(0, 0, 0, 0.3)",
+    fontSize: width * 0.22, // Slightly smaller temp
+    fontWeight: "200", // Keep thin font weight
+    // color handled dynamically
+    lineHeight: width * 0.23, // Adjust line height accordingly
+    textShadowColor: "rgba(0, 0, 0, 0.4)", // Darker shadow
     textShadowOffset: { width: 1, height: 2 },
-    textShadowRadius: 3,
+    textShadowRadius: 4, // Larger radius
   },
   condition: {
-    fontSize: SPACING.lg,
+    fontSize: SPACING.lg, // Consistent size with location
     fontWeight: "500",
-    color: COLORS.textDark,
-    marginBottom: SPACING.sm,
+    // color handled dynamically
+    marginBottom: SPACING.xs, // Reduced margin
+    textTransform: "capitalize", // Capitalize condition text
   },
-  high: {
-    fontSize: SPACING.xl - 5,
-    color: "rgba(255, 204, 0, 1)",
-    marginBottom: SPACING.xl,
-  },
-
-  Low: {
-    fontSize: SPACING.xl - 5,
-    color: "rgba(0, 85, 255, 1)",
-    marginBottom: SPACING.xl,
+  highLowText: {
+    // Combined High/Low style
+    fontSize: SPACING.md + 2, // Slightly larger H/L text
+    fontWeight: "400",
+    // color handled dynamically
+    marginBottom: SPACING.lg, // Adjusted margin
   },
   detailRow: {
     flexDirection: "row",
     justifyContent: "space-around",
-    width: "100%",
+    width: "90%", // Use slightly less width for padding effect
     paddingTop: SPACING.md,
-    paddingBottom: SPACING.md,
+    marginTop: SPACING.md, // Add margin top
+    // borderTopWidth: StyleSheet.hairlineWidth, // Use hairline width
     borderTopWidth: 1,
+    borderTopColor: "rgba(255, 255, 255, 0.3)", // Lighter border color
   },
   detailItem: {
     alignItems: "center",
   },
   detailText: {
-    fontSize: 18,
-    marginTop: SPACING.xs,
+    fontSize: 16, // Slightly smaller detail text
+    marginTop: SPACING.xs, // Reduced margin
     fontWeight: "500",
-    color: COLORS.textDark,
+    // color handled dynamically
   },
 });

@@ -1,34 +1,42 @@
 import { LinearGradient } from "expo-linear-gradient";
 import React, { FC, ReactNode } from "react";
-import { StyleSheet, View, ViewStyle } from "react-native";
+import { StatusBar, StyleSheet, ViewStyle } from "react-native"; // Import StatusBar
 import { SafeAreaView } from "react-native-safe-area-context";
+import { COLORS } from "../styles/theme"; // Import COLORS
 
 interface ScreenWrapperProps {
   children: ReactNode;
   style?: ViewStyle;
-  // Set a safe default value for gradientColors just in case, though the hook should handle it.
-  // The structure `gradientColors: [string, string] | undefined` forces default handling here.
-  gradientColors: [string, string];
+  // Make gradientColors optional, provide default in the component
+  gradientColors?: [string, string];
 }
 
 /**
  * A wrapper for all screens providing safe area handling and a dynamic linear gradient background.
+ * Also sets the status bar style.
  */
 export const ScreenWrapper: FC<ScreenWrapperProps> = ({
   children,
   style,
-  // Add a defensive default fallback (though TypeScript should enforce this)
-  gradientColors = ["#00a6ffff", "#cdf7ffff"],
+  // Provide default gradient colors here
+  gradientColors = [COLORS.blueDark, COLORS.blueLight],
 }) => {
+  // Determine status bar style based on the primary gradient color (simple brightness check)
+  // This is a basic example; more sophisticated logic might be needed
+  const isDarkBackground =
+    gradientColors[0].startsWith("#") &&
+    parseInt(gradientColors[0].substring(1, 3), 16) < 100; // Rough check if first color is dark
+  const statusBarStyle = isDarkBackground ? "light-content" : "dark-content";
+
   return (
-    // Check for null/undefined just to be absolutely safe, though we rely on TS to guarantee it.
-    <LinearGradient
-      // Ensure colors is always an array with at least two elements
-      colors={gradientColors}
-      style={[styles.container, style]}
-    >
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.content}>{children}</View>
+    // Use the provided or default gradient colors
+    <LinearGradient colors={gradientColors} style={[styles.container, style]}>
+      {/* Set status bar style */}
+      <StatusBar barStyle={statusBarStyle} />
+      {/* Apply edges prop to SafeAreaView to control safe area insets */}
+      <SafeAreaView style={styles.safeArea} edges={["top", "left", "right"]}>
+        {/* Removed the inner View, children are directly inside SafeAreaView */}
+        {children}
       </SafeAreaView>
     </LinearGradient>
   );
@@ -41,7 +49,5 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  content: {
-    flex: 1,
-  },
+  // Removed content style as it's no longer needed
 });

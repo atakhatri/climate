@@ -17,6 +17,7 @@ export default {
       },
     },
     android: {
+      package: "com.ata_khatri.climate", // Add this line
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/images/android-icon-foreground.png",
@@ -58,6 +59,9 @@ export default {
       openWeatherApiKey: process.env.OPENWEATHERMAP_API_KEY,
       openCageApiKey: process.env.OPENCAGE_API_KEY,
       weatherApiKey: process.env.WEATHERAPI_API_KEY,
+      eas: {
+        projectId: "278f04fd-7c69-4a88-a132-81202c3ccaf2",
+      },
     },
   },
 };

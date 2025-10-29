@@ -2,9 +2,6 @@ import "dotenv/config"; // Import dotenv to load .env variables
 
 export default {
   expo: {
-    owner: "ata_khatri",
-    name: "climate",
-    slug: "climate-k15lufox7hpj4mp7ius-",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -61,9 +58,6 @@ export default {
       openWeatherApiKey: process.env.OPENWEATHERMAP_API_KEY,
       openCageApiKey: process.env.OPENCAGE_API_KEY,
       weatherApiKey: process.env.WEATHERAPI_API_KEY,
-      eas: {
-        projectId: "60ac55cb-4fce-44b1-a273-972de226f118",
-      },
     },
   },
 };

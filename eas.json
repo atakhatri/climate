@@ -15,7 +15,8 @@
       "autoIncrement": true,
       "android": {
         "buildType": "apk",
-        "credentialsSource": "remote"
+        "credentialsSource": "remote",
+        "serviceAccountKeyPath": null
       },
       "ios": {
         "credentialsSource": "remote"
@@ -26,3 +27,4 @@
     "production": {}
   }
 }
+

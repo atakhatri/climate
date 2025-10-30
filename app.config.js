@@ -1,7 +1,10 @@
-import "dotenv/config"; // Import dotenv to load .env variables
+import "dotenv/config";
 
 export default {
   expo: {
+    name: "Climate",
+    slug: "climate",
+    owner: "ata_khatri",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
@@ -16,7 +19,7 @@ export default {
       },
     },
     android: {
-      package: "com.ata_khatri.climate", // Add this line
+      package: "com.ata_khatri.climate",
       adaptiveIcon: {
         backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/images/android-icon-foreground.png",
@@ -58,6 +61,9 @@ export default {
       openWeatherApiKey: process.env.OPENWEATHERMAP_API_KEY,
       openCageApiKey: process.env.OPENCAGE_API_KEY,
       weatherApiKey: process.env.WEATHERAPI_API_KEY,
+      eas: {
+        projectId: "f6a89ce2-b7a7-4d44-89e6-45ff738a8227",
+      },
     },
   },
 };

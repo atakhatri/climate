@@ -1,15 +1,89 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
+// --- Import Animated and Reanimated hooks ---
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from "react-native-reanimated";
+// ------------------------------------------
 import { DailyData } from "../app/utils/types";
 import { SPACING } from "../styles/theme";
-import { WeatherIconComponent } from "./WeatherIcon"; // Import the new component
-
-// Remove getIconName and getIconColor
+import { WeatherIconComponent } from "./WeatherIcon";
 
 interface DailyForecastProps {
   data: DailyData[];
   textColor: string;
 }
+
+// --- Create an Animated Item Component ---
+interface DailyItemProps {
+  item: DailyData;
+  index: number;
+  isLast: boolean;
+  textColor: string;
+}
+
+const AnimatedDailyItem: React.FC<DailyItemProps> = ({
+  item,
+  index,
+  isLast,
+  textColor,
+}) => {
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(15);
+
+  useEffect(() => {
+    // Stagger animation based on index
+    opacity.value = withDelay(
+      index * 90,
+      withTiming(1, { duration: 450, easing: Easing.out(Easing.ease) })
+    );
+    translateY.value = withDelay(
+      index * 90,
+      withTiming(0, { duration: 450, easing: Easing.out(Easing.ease) })
+    );
+  }, [opacity, translateY, index]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [{ translateY: translateY.value }],
+    };
+  });
+
+  return (
+    <Animated.View
+      style={[
+        styles.dayItem,
+        isLast && styles.lastItem, // Keep last item style
+        animatedStyle, // Apply animated styles
+      ]}
+    >
+      <Text style={[styles.dayText, { color: textColor }]}>{item.day}</Text>
+
+      <View style={styles.iconContainer}>
+        <WeatherIconComponent
+          condition={item.icon}
+          isDay={true}
+          size={SPACING.xxl + 2}
+        />
+      </View>
+
+      <View style={styles.tempContainer}>
+        <Text style={[styles.tempTextHigh, { color: textColor }]}>
+          {item.high}°
+        </Text>
+        <Text style={[styles.tempTextLow, { color: textColor, opacity: 0.7 }]}>
+          {item.low}°
+        </Text>
+      </View>
+    </Animated.View>
+  );
+};
+// ----------------------------------------
 
 export const DailyForecast: React.FC<DailyForecastProps> = ({
   data,
@@ -19,44 +93,23 @@ export const DailyForecast: React.FC<DailyForecastProps> = ({
     <View style={styles.container}>
       <Text style={[styles.title, { color: textColor }]}>7-Day Forecast</Text>
       <View style={styles.list}>
+        {/* --- Map over data and render AnimatedDailyItem --- */}
         {data.map((item, index) => (
-          <View
+          <AnimatedDailyItem
             key={index}
-            style={[
-              styles.dayItem,
-              index === data.length - 1 && styles.lastItem, // Keep last item style
-            ]}
-          >
-            <Text style={[styles.dayText, { color: textColor }]}>
-              {item.day}
-            </Text>
-
-            <View style={styles.iconContainer}>
-              {/* Use WeatherIconComponent, assume isDay=true for daily */}
-              <WeatherIconComponent
-                condition={item.icon}
-                isDay={true} // Assume day icon for daily forecast
-                size={SPACING.xxl + 2} // Adjust size
-              />
-            </View>
-
-            <View style={styles.tempContainer}>
-              <Text style={[styles.tempTextHigh, { color: textColor }]}>
-                {item.high}°
-              </Text>
-              <Text
-                style={[styles.tempTextLow, { color: textColor, opacity: 0.7 }]}
-              >
-                {item.low}°
-              </Text>
-            </View>
-          </View>
+            item={item}
+            index={index}
+            isLast={index === data.length - 1}
+            textColor={textColor}
+          />
         ))}
+        {/* ------------------------------------------------ */}
       </View>
     </View>
   );
 };
 
+// Styles remain the same
 const styles = StyleSheet.create({
   container: {
     width: "100%",
@@ -67,7 +120,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: "900",
-    // color: COLORS.textDark, // Ensure contrast
     marginBottom: SPACING.sm, // Increased margin
     paddingLeft: SPACING.xs,
   },
@@ -88,13 +140,11 @@ const styles = StyleSheet.create({
   dayText: {
     fontSize: 18, // Slightly smaller
     fontWeight: "800",
-    // color: COLORS.textDark, // Ensure contrast
     flex: 1.2, // Give day text slightly more space
   },
   iconContainer: {
     flex: 1,
     alignItems: "center",
-    // backgroundColor: 'red', // For debugging alignment
     paddingRight: SPACING.md, // Add padding
   },
   tempContainer: {
@@ -104,19 +154,15 @@ const styles = StyleSheet.create({
     alignItems: "center", // Align temps vertically
   },
   tempTextHigh: {
-    // Combined high/low styles
     fontSize: 18,
     fontWeight: "800",
-    // color: COLORS.textDark, // Ensure contrast
     minWidth: 35, // Ensure space
     textAlign: "right",
     marginRight: SPACING.sm, // Add space between high and low
   },
   tempTextLow: {
-    // Combined high/low styles
     fontSize: 18,
     fontWeight: "800", // Slightly less bold
-    // color: COLORS.indigo, // Use a different color for low temp
     minWidth: 35, // Ensure space
     textAlign: "right",
   },

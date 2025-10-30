@@ -1,6 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
+// --- Import Animated and Reanimated hooks ---
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+// ------------------------------------------
 import { CurrentWeather } from "../app/utils/types";
 import { COLORS, SPACING } from "../styles/theme";
 import { WeatherIconComponent } from "./WeatherIcon";
@@ -8,7 +16,6 @@ import { WeatherIconComponent } from "./WeatherIcon";
 const { width } = Dimensions.get("window");
 
 // Interface for the data passed to the card
-// This creates a type that is the same as CurrentWeather, but without the hourly and daily arrays.
 type CardData = Omit<CurrentWeather, "hourly" | "daily"> & { timezone: string };
 
 interface CurrentWeatherCardProps {
@@ -21,6 +28,11 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
   textColor,
 }) => {
   const [currentTime, setCurrentTime] = useState("");
+
+  // --- Reanimated Shared Values ---
+  const opacity = useSharedValue(0);
+  const translateY = useSharedValue(20);
+  // ------------------------------
 
   useEffect(() => {
     const updateTime = () => {
@@ -38,11 +50,32 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
     updateTime(); // Set time immediately on mount
     const intervalId = setInterval(updateTime, 1000); // Update every second
 
+    // --- Trigger Animation ---
+    opacity.value = withTiming(1, {
+      duration: 500,
+      easing: Easing.out(Easing.ease),
+    });
+    translateY.value = withTiming(0, {
+      duration: 500,
+      easing: Easing.out(Easing.ease),
+    });
+    // -------------------------
+
     return () => clearInterval(intervalId); // Clear interval on unmount
-  }, [data.timezone]); // Re-run effect if the timezone changes
+  }, [data.timezone, opacity, translateY]); // Add animated values to dependencies
+
+  // --- Animated Style ---
+  const animatedCardStyle = useAnimatedStyle(() => {
+    return {
+      opacity: opacity.value,
+      transform: [{ translateY: translateY.value }],
+    };
+  });
+  // ----------------------
 
   return (
-    <View style={styles.card}>
+    // --- Wrap card content in Animated.View ---
+    <Animated.View style={[styles.card, animatedCardStyle]}>
       {/* Location */}
       <Text style={[styles.location, { color: textColor }]}>
         {data.location}
@@ -111,10 +144,12 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
           textColor={textColor}
         />
       </View>
-    </View>
+    </Animated.View>
+    // ----------------------------------------
   );
 };
 
+// DetailItem component remains the same
 interface DetailItemProps {
   icon: any;
   coloroficon: string;
@@ -134,6 +169,7 @@ const DetailItem: React.FC<DetailItemProps> = ({
   </View>
 );
 
+// Styles remain the same
 const styles = StyleSheet.create({
   card: {
     width: width * 1, // Take full width
@@ -142,12 +178,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: SPACING.md, // Reduced margin
     marginTop: SPACING.lg, // Add some top margin
-    // Removed background color and shadow - handled by ScreenWrapper gradient
   },
   location: {
     fontSize: SPACING.lg, // Slightly smaller
     fontWeight: "600",
-    // color handled dynamically
     marginTop: SPACING.md, // Adjusted margin
     marginBottom: SPACING.md, // Adjusted margin
     textShadowColor: "rgba(0, 0, 0, 0.3)", // Slightly darker shadow
@@ -161,7 +195,6 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: SPACING.xs, // Reduced margin
-    // Add shadow to icon for depth
     textShadowColor: "rgba(0, 0, 0, 0.4)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
@@ -169,7 +202,6 @@ const styles = StyleSheet.create({
   temperature: {
     fontSize: width * 0.22, // Slightly smaller temp
     fontWeight: "200", // Keep thin font weight
-    // color handled dynamically
     lineHeight: width * 0.23, // Adjust line height accordingly
     textShadowColor: "rgba(0, 0, 0, 0.4)", // Darker shadow
     textShadowOffset: { width: 1, height: 2 },
@@ -178,7 +210,6 @@ const styles = StyleSheet.create({
   condition: {
     fontSize: SPACING.lg, // Consistent size with location
     fontWeight: "500",
-    // color handled dynamically
     textTransform: "capitalize", // Capitalize condition text
     marginBottom: SPACING.xs, // Reduced margin
   },
@@ -192,14 +223,10 @@ const styles = StyleSheet.create({
   feelsLikeText: {
     fontSize: SPACING.md + 2,
     fontWeight: "400",
-    // color handled dynamically
   },
-
   highLowText: {
-    // Combined High/Low style
     fontSize: SPACING.md + 2, // Slightly larger H/L text
     fontWeight: "400",
-    // color handled dynamically
     marginBottom: SPACING.lg, // Adjusted margin
   },
   detailRow: {
@@ -208,7 +235,6 @@ const styles = StyleSheet.create({
     width: "90%", // Use slightly less width for padding effect
     paddingTop: SPACING.md,
     marginTop: SPACING.md, // Add margin top
-    // borderTopWidth: StyleSheet.hairlineWidth, // Use hairline width
     borderTopWidth: 1,
     borderTopColor: "rgba(255, 255, 255, 0.3)", // Lighter border color
   },
@@ -219,7 +245,6 @@ const styles = StyleSheet.create({
     fontSize: 16, // Slightly smaller detail text
     marginTop: SPACING.xs, // Reduced margin
     fontWeight: "500",
-    // color handled dynamically
   },
   timeContainer: {
     flexDirection: "row",
@@ -230,7 +255,6 @@ const styles = StyleSheet.create({
   timeText: {
     fontSize: SPACING.md + 2,
     fontWeight: "500",
-    // color handled dynamically
     textShadowColor: "rgba(0, 0, 0, 0.3)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,

@@ -5,6 +5,9 @@ import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS, SPACING } from "../styles/theme";
 
+// Define which routes we explicitly want to show in the tab bar
+const VISIBLE_ROUTES = ["index", "cities"];
+
 export const CustomTabBar: React.FC<BottomTabBarProps> = ({
   state,
   descriptors,
@@ -12,11 +15,20 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
 }) => {
   const { bottom } = useSafeAreaInsets(); // Get bottom safe area padding
 
+  // Filter the routes to only include the ones we want
+  const visibleRoutes = state.routes.filter((route) =>
+    VISIBLE_ROUTES.includes(route.name)
+  );
+
   return (
     <View style={[styles.container, { bottom: bottom + SPACING.sm }]}>
-      {state.routes.map((route, index) => {
+      {visibleRoutes.map((route, index) => {
+        // Map over the filtered routes
         const { options } = descriptors[route.key];
-        const isFocused = state.index === index;
+
+        // Find the "real" index of this route in the original state
+        const isFocused =
+          state.index === state.routes.findIndex((r) => r.key === route.key);
 
         const onPress = () => {
           const event = navigation.emit({

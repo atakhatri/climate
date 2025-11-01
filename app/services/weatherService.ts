@@ -119,8 +119,8 @@ export const fetchWeatherData = async (
         throw new Error("Missing WeatherAPI Key");
     }
 
-    // Request 7 days of forecast for the daily view
-    const url = `${WEATHERAPI_FORECAST_URL}?key=${WEATHERAPI_API_KEY}&q=${lat},${lon}&days=7&aqi=no&alerts=no`;
+    // --- MODIFICATION: Set aqi=yes ---
+    const url = `${WEATHERAPI_FORECAST_URL}?key=${WEATHERAPI_API_KEY}&q=${lat},${lon}&days=7&aqi=yes&alerts=no`;
 
     try {
         const response = await fetch(url);
@@ -141,7 +141,7 @@ export const fetchWeatherData = async (
         const todayForecast = forecast[0];
         const tomorrowForecast = forecast[1]; // Get tomorrow's hourly data too
 
-        // --- ADJUSTED HOURLY FORECAST LOGIC ---
+        // --- ADJUSTED HOURLY FORECAST LOGIC (remains the same) ---
         const nowEpoch = Math.floor(Date.now() / 1000); // Current time in seconds
         const allHours = [
             ...(todayForecast?.hour || []),
@@ -175,7 +175,6 @@ export const fetchWeatherData = async (
 
 
         const weatherData: CurrentWeather = {
-            // ... (rest of the weatherData mapping remains the same) ...
             location: data.location.name,
             temperature: Math.round(current.temp_c),
             condition: current.condition.text,
@@ -185,10 +184,14 @@ export const fetchWeatherData = async (
             low: Math.round(todayForecast.day.mintemp_c),
             windSpeed: Math.round(current.wind_kph * 1000 / 3600),
             humidity: current.humidity,
-            feelsLike: Math.round(current.feelslike_c), // Add feelsLike temperature
-            timezone: data.location.tz_id, // Add timezone identifier
+            feelsLike: Math.round(current.feelslike_c),
+            timezone: data.location.tz_id,
             uvIndex: current.uv,
-            hourly: hourlyData, // Assign the newly processed 12-hour data
+            // --- NEW FIELDS ---
+            vis_km: current.vis_km,
+            airQualityIndex: current.air_quality ? current.air_quality['us-epa-index'] : null,
+            // ------------------
+            hourly: hourlyData,
             daily: forecast.map((dayData: any): DailyData => {
                 const date = parseISO(dayData.date);
                 return {
@@ -214,7 +217,7 @@ export const fetchWeatherData = async (
 // --- End fetchWeatherData ---
 
 
-// --- Function to search for cities using OpenCage (keep as is) ---
+// --- Function to search for cities using OpenCage (remains the same) ---
 export const searchCities = async (query: string, limit: number = 5): Promise<GeoLocation[]> => {
     if (!OPENCAGE_API_KEY || OPENCAGE_API_KEY === 'YOUR_OPENCAGE_API_KEY') {
         console.error("OpenCage API Key missing!");
@@ -256,6 +259,7 @@ export const searchCities = async (query: string, limit: number = 5): Promise<Ge
 };
 // --- End searchCities ---
 
+// --- reverseGeocode (remains the same) ---
 export const reverseGeocode = async (lat: number, lon: number): Promise<GeoLocation | null> => {
     if (!OPENCAGE_API_KEY || OPENCAGE_API_KEY === 'YOUR_OPENCAGE_API_KEY') {
         console.error("OpenCage API Key missing for reverse geocoding!");
@@ -299,3 +303,4 @@ export const reverseGeocode = async (lat: number, lon: number): Promise<GeoLocat
         return null;
     }
 }
+

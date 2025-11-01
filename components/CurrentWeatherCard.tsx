@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import React, { useEffect, useState } from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
 // --- Import Animated and Reanimated hooks ---
@@ -10,13 +9,24 @@ import Animated, {
 } from "react-native-reanimated";
 // ------------------------------------------
 import { CurrentWeather } from "../app/utils/types";
-import { COLORS, SPACING } from "../styles/theme";
+import { SPACING } from "../styles/theme";
 import { WeatherIconComponent } from "./WeatherIcon";
 
 const { width } = Dimensions.get("window");
 
 // Interface for the data passed to the card
-type CardData = Omit<CurrentWeather, "hourly" | "daily"> & { timezone: string };
+// --- Updated to remove fields now shown in the details grid ---
+type CardData = Omit<
+  CurrentWeather,
+  | "hourly"
+  | "daily"
+  | "windSpeed"
+  | "humidity"
+  | "uvIndex"
+  | "vis_km"
+  | "airQualityIndex"
+> & { timezone: string };
+// ------------------------------------------------------------
 
 interface CurrentWeatherCardProps {
   data: CardData;
@@ -106,77 +116,29 @@ export const CurrentWeatherCard: React.FC<CurrentWeatherCardProps> = ({
       <Text style={[styles.condition, { color: textColor }]}>
         {data.condition}
       </Text>
-      <View style={styles.feelsLikeContainer}>
-        <Ionicons
-          name="thermometer-outline"
-          size={SPACING.lg}
-          color={textColor}
-          style={{ opacity: 0.8 }}
-        />
-        <Text style={[styles.feelsLikeText, { color: textColor }]}>
-          Feels like: {data.feelsLike}°
-        </Text>
-      </View>
 
       {/* Condition & High/Low */}
       <Text style={[styles.highLowText, { color: textColor }]}>
         H: {data.high}° / L: {data.low}°
       </Text>
 
-      {/* Detail Row */}
-      <View style={styles.detailRow}>
-        <DetailItem
-          icon="flag-outline"
-          coloroficon={COLORS.tabActiveTint}
-          label={`${data.windSpeed} m/s`}
-          textColor={textColor}
-        />
-        <DetailItem
-          icon="water"
-          coloroficon={COLORS.blue}
-          label={`${data.humidity}%`}
-          textColor={textColor}
-        />
-        <DetailItem
-          icon="sunny-outline"
-          coloroficon={COLORS.purple}
-          label={`UV ${data.uvIndex}`}
-          textColor={textColor}
-        />
-      </View>
+      {/* --- REMOVED Detail Row --- */}
+      {/* This is now handled by the new WeatherDetailsGrid component */}
     </Animated.View>
     // ----------------------------------------
   );
 };
 
-// DetailItem component remains the same
-interface DetailItemProps {
-  icon: any;
-  coloroficon: string;
-  label: string;
-  textColor: string;
-}
+// --- REMOVED DetailItem Component ---
 
-const DetailItem: React.FC<DetailItemProps> = ({
-  icon,
-  coloroficon,
-  label,
-  textColor,
-}) => (
-  <View style={styles.detailItem}>
-    <Ionicons name={icon} size={SPACING.lg} color={coloroficon} />
-    <Text style={[styles.detailText, { color: textColor }]}>{label}</Text>
-  </View>
-);
-
-// Styles remain the same
+// Styles
 const styles = StyleSheet.create({
   card: {
     width: width * 1, // Take full width
-    paddingVertical: SPACING.xl,
+    paddingTop: SPACING.lg,
+    paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.lg, // Use consistent padding
     alignItems: "center",
-    marginBottom: SPACING.md, // Reduced margin
     marginTop: SPACING.lg, // Add some top margin
   },
   location: {
@@ -229,23 +191,6 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     marginBottom: SPACING.lg, // Adjusted margin
   },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    width: "90%", // Use slightly less width for padding effect
-    paddingTop: SPACING.md,
-    marginTop: SPACING.md, // Add margin top
-    borderTopWidth: 1,
-    borderTopColor: "rgba(255, 255, 255, 0.3)", // Lighter border color
-  },
-  detailItem: {
-    alignItems: "center",
-  },
-  detailText: {
-    fontSize: 16, // Slightly smaller detail text
-    marginTop: SPACING.xs, // Reduced margin
-    fontWeight: "500",
-  },
   timeContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -259,4 +204,5 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
+  // --- REMOVED styles for detailRow, detailItem, detailText ---
 });

@@ -3,7 +3,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  FlatList,
+  FlatList, // We'll create an animated version of this
   Keyboard,
   StyleSheet,
   Text,
@@ -20,7 +20,13 @@ import MapView, {
   Region,
 } from "react-native-maps";
 // --------------------
+// --- Import Animated and scroll handler ---
+import Animated, { useAnimatedScrollHandler } from "react-native-reanimated";
+// ------------------------------------------
 import { SafeAreaView } from "react-native-safe-area-context";
+// --- Import scroll context ---
+import { useScroll } from "../../components/ScrollContext";
+// -----------------------------
 import { COLORS, SPACING } from "../../styles/theme";
 import {
   addFavorite,
@@ -35,6 +41,7 @@ import {
 
 // Debounce hook (simple implementation)
 function useDebounce<T>(value: T, delay: number): T {
+  // ... existing code ...
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {
@@ -52,6 +59,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 // Helper component for rendering a location item (search result or favorite)
 interface LocationListItemProps {
+  // ... existing code ...
   item: GeoLocation;
   onPress: (item: GeoLocation) => void;
   onToggleFavorite?: (item: GeoLocation) => void; // For search results
@@ -66,6 +74,7 @@ const LocationListItem: React.FC<LocationListItemProps> = ({
   onRemoveFavorite,
   isFavorite,
 }) => (
+  // ... existing code ...
   <TouchableOpacity style={styles.resultItem} onPress={() => onPress(item)}>
     <View style={styles.itemTextContainer}>
       <Text style={styles.resultName}>{item.name}</Text>
@@ -99,6 +108,7 @@ const LocationListItem: React.FC<LocationListItemProps> = ({
 
 // --- Default Region (Vadodara) ---
 const DEFAULT_REGION = {
+  // ... existing code ...
   latitude: 22.3072,
   longitude: 73.1812,
   latitudeDelta: 0.5, // Zoom level
@@ -106,24 +116,44 @@ const DEFAULT_REGION = {
 };
 // --------------------------
 
+// --- Create Animated.FlatList ---
+// This allows us to attach an animated scroll handler
+const AnimatedFlatList = Animated.createAnimatedComponent(
+  FlatList<GeoLocation>
+);
+// --------------------------------
+
 export default function CitiesScreen() {
+  // ... existing code ...
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [results, setResults] = useState<GeoLocation[]>([]);
+  // ... existing code ...
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<GeoLocation[]>([]);
 
   // --- Map State ---
   const [mapRegion, setMapRegion] = useState<Region>(DEFAULT_REGION);
+  // ... existing code ...
   const [selectedLocation, setSelectedLocation] = useState<GeoLocation | null>(
     null
   );
   const mapRef = useRef<MapView>(null); // Ref to control map position
   // -----------------
 
-  // --- Tab Bar Visibility ---
-  const lastOffsetY = useRef(0);
+  // --- Use scroll context ---
+  const { scrollY } = useScroll();
+  // --------------------------
+
+  // --- Define Scroll Handler ---
+  // This handler updates the shared scrollY value whenever this list is scrolled.
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+  // ---------------------------
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -135,11 +165,17 @@ export default function CitiesScreen() {
         setFavorites(savedFavorites);
       };
       loadFavorites();
-    }, [])
+
+      // --- Reset scroll position when screen is focused ---
+      // This ensures the tab bar is visible when switching to this tab
+      scrollY.value = 0;
+      // --------------------------------------------------
+    }, [scrollY]) // Add scrollY as a dependency
   );
 
   // Effect to get user's initial location and center the map
   useEffect(() => {
+    // ... existing code ...
     const getUserLocation = async () => {
       // 1. Request permission to access location
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -170,6 +206,7 @@ export default function CitiesScreen() {
 
   // Effect to trigger search when debounced query changes
   useEffect(() => {
+    // ... existing code ...
     const performSearch = async () => {
       if (debouncedSearchQuery.trim().length < 2) {
         setResults([]);
@@ -219,6 +256,7 @@ export default function CitiesScreen() {
 
   // Handle selecting a city (from list item's main press or map callout press)
   const handleSelectCity = useCallback(
+    // ... existing code ...
     (city: GeoLocation) => {
       Keyboard.dismiss(); // Dismiss keyboard
       router.push({
@@ -235,6 +273,7 @@ export default function CitiesScreen() {
 
   // Handle tapping on the map
   const handleMapPress = async (event: any) => {
+    // ... existing code ...
     // Ignore tap if loading
     if (loading) return;
 
@@ -264,6 +303,7 @@ export default function CitiesScreen() {
 
   // Handle tapping a search result item in the list
   const handleResultItemPress = (item: GeoLocation) => {
+    // ... existing code ...
     Keyboard.dismiss();
     setSelectedLocation(item); // Set marker
     const newRegion = {
@@ -281,6 +321,7 @@ export default function CitiesScreen() {
 
   // Toggle favorite status (for search results)
   const handleToggleFavorite = async (location: GeoLocation) => {
+    // ... existing code ...
     const isFav = favorites.some(
       (fav) => fav.lat === location.lat && fav.lon === location.lon
     );
@@ -294,12 +335,14 @@ export default function CitiesScreen() {
 
   // Remove favorite (for items in the favorites list)
   const handleRemoveFavorite = async (location: GeoLocation) => {
+    // ... existing code ...
     await removeFavorite(location);
     setFavorites(await getFavorites()); // Refresh favorites list state
   };
 
   // Handle pressing the "Use My Current Location" button
   const handleUseCurrentLocation = async () => {
+    // ... existing code ...
     Keyboard.dismiss();
     setLoading(true);
     setError(null);
@@ -338,6 +381,7 @@ export default function CitiesScreen() {
   };
 
   const renderItem = ({ item }: { item: GeoLocation }) => {
+    // ... existing code ...
     const isFav = favorites.some(
       (fav) => fav.lat === item.lat && fav.lon === item.lon
     );
@@ -365,6 +409,7 @@ export default function CitiesScreen() {
   };
 
   const showFavorites = searchQuery.trim().length === 0;
+  // ... existing code ...
   const listData = showFavorites ? favorites : results;
   // Adjust empty state logic: show if not loading AND (error exists OR listData is empty)
   const showEmptyState = !loading && (!!error || listData.length === 0);
@@ -376,6 +421,7 @@ export default function CitiesScreen() {
         <MapView
           ref={mapRef}
           style={styles.map}
+          // ... existing code ...
           provider={PROVIDER_GOOGLE}
           initialRegion={DEFAULT_REGION}
           // region={mapRegion} // Let map handle internal region changes unless animating
@@ -390,6 +436,7 @@ export default function CitiesScreen() {
                 latitude: selectedLocation.lat,
                 longitude: selectedLocation.lon,
               }}
+              // ... existing code ...
               title={selectedLocation.name}
               description={selectedLocation.formatted}
               // Tapping the marker itself focuses the map
@@ -422,6 +469,7 @@ export default function CitiesScreen() {
           <TextInput
             style={styles.input}
             placeholder="Search for a city or tap map..."
+            // ... existing code ...
             placeholderTextColor={COLORS.textLight}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -483,19 +531,23 @@ export default function CitiesScreen() {
           )}
 
           {!loading && !error && listData.length > 0 && (
-            <FlatList
+            /* --- Use AnimatedFlatList and pass scroll handler --- */
+            <AnimatedFlatList
               data={listData}
               renderItem={renderItem}
               keyExtractor={(item, index) => `${item.lat}-${item.lon}-${index}`} // Add index for potential duplicates in search
               style={styles.resultsList}
               keyboardShouldPersistTaps="handled" // Allows tapping items while keyboard is up
-              scrollEventThrottle={16}
+              onScroll={scrollHandler} // Attach scroll handler
+              scrollEventThrottle={16} // Important for smooth scroll handling
+              contentContainerStyle={styles.listContent} // Add padding for tab bar
               ListHeaderComponent={
                 <Text style={styles.listHeader}>
                   {showFavorites ? "Favorite Locations" : "Search Results"}
                 </Text>
               }
             />
+            /* --------------------------------------------------- */
           )}
         </View>
       </View>
@@ -504,19 +556,23 @@ export default function CitiesScreen() {
 }
 
 const styles = StyleSheet.create({
+  // ... existing code ...
   safeArea: {
     flex: 1,
     backgroundColor: COLORS.backgroundDark,
   },
   container: {
+    // ... existing code ...
     flex: 1,
     backgroundColor: COLORS.backgroundDark,
   },
   map: {
+    // ... existing code ...
     width: "100%",
     height: "50%",
   },
   searchContainer: {
+    // ... existing code ...
     position: "absolute",
     top: SPACING.md,
     left: SPACING.md,
@@ -535,18 +591,22 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   searchIcon: {
+    // ... existing code ...
     marginRight: SPACING.sm,
   },
   input: {
+    // ... existing code ...
     flex: 1,
     fontSize: 16,
     color: COLORS.textLight,
     height: "100%",
   },
   clearIconContainer: {
+    // ... existing code ...
     paddingLeft: SPACING.sm,
   },
   listContainer: {
+    // ... existing code ...
     flex: 1,
     height: "60%",
     backgroundColor: COLORS.backgroundDark,
@@ -561,20 +621,30 @@ const styles = StyleSheet.create({
     borderTopColor: COLORS.gray,
   },
   centeredMessage: {
+    // ... existing code ...
     // Style for loading/error within list container
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
   errorText: {
+    // ... existing code ...
     textAlign: "center",
     color: COLORS.red,
     fontSize: 14,
   },
   resultsList: {
+    // ... existing code ...
     flex: 1,
   },
+  // --- Add paddingBottom to list content ---
+  listContent: {
+    // Add extra padding to the bottom so content can scroll up from behind the tab bar
+    paddingBottom: SPACING.xxl + 80, // 80 is a safe value for the tab bar
+  },
+  // ---------------------------------------
   resultItem: {
+    // ... existing code ...
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -585,15 +655,18 @@ const styles = StyleSheet.create({
   },
   itemTextContainer: { flex: 1, marginRight: SPACING.md },
   resultName: {
+    // ... existing code ...
     fontSize: 16,
     fontWeight: "500",
     color: COLORS.textLight,
   },
   resultDetails: {
+    // ... existing code ...
     fontSize: 14,
     color: COLORS.slate,
   },
   emptyContainer: {
+    // ... existing code ...
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
@@ -601,6 +674,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.lg,
   },
   emptyText: {
+    // ... existing code ...
     fontSize: 18,
     fontWeight: "600",
     color: COLORS.textLight,
@@ -608,11 +682,13 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   emptySubText: {
+    // ... existing code ...
     fontSize: 14,
     color: COLORS.gray,
     textAlign: "center",
   },
   listHeader: {
+    // ... existing code ...
     // Renamed from favoritesHeader for dual use
     fontSize: 18,
     fontWeight: "bold",
@@ -621,22 +697,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.sm,
   },
   calloutView: {
+    // ... existing code ...
     // Style for the marker callout bubble
     padding: SPACING.sm,
     minWidth: 120, // Give it some width
     alignItems: "center",
   },
   calloutText: {
+    // ... existing code ...
     fontWeight: "600",
     color: COLORS.textLight,
     fontSize: 14,
     marginBottom: SPACING.xs,
   },
   calloutSubText: {
+    // ... existing code ...
     fontSize: 12,
     color: COLORS.textLight,
   },
   currentLocationButtonContainer: {
+    // ... existing code ...
     position: "absolute",
     bottom: 430,
     right: 155,
@@ -646,6 +726,7 @@ const styles = StyleSheet.create({
     borderRadius: 100,
   },
   currentLocationButton: {
+    // ... existing code ...
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

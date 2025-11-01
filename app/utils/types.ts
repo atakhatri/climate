@@ -31,6 +31,11 @@ export interface CurrentWeather {
     uvIndex: number;
     hourly: HourlyData[];
     daily: DailyData[];
-    feelsLike: number; // Add feelsLike temperature
-    timezone: string; // Add timezone identifier (e.g., "America/New_York")
+    feelsLike: number;
+    timezone: string;
+    // --- NEW FIELDS ---
+    vis_km: number;
+    airQualityIndex: number | null; // US EPA Index (1-6) or null
+    // ------------------
 }
+

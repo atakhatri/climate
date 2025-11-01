@@ -1,17 +1,22 @@
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router"; // Import hook to get parameters
-import React, { useEffect, useState } from "react";
+import * as Location from "expo-location";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
 } from "react-native";
+import Animated, { useAnimatedScrollHandler } from "react-native-reanimated";
 import { CurrentWeatherCard } from "../../components/CurrentWeatherCard";
 import { DailyForecast } from "../../components/DailyForecast";
 import { HourlyForecast } from "../../components/HourlyForecast";
 import { ScreenWrapper } from "../../components/ScreenWrapper";
+// --- Import the new grid component ---
+import { WeatherDetailsGrid } from "../../components/WeatherDetailsGrid";
+// -------------------------------------
+import { useScroll } from "../../components/ScrollContext";
 import { useWeatherTheme } from "../../hooks/useWeatherTheme";
 import { COLORS, SPACING } from "../../styles/theme";
 import {
@@ -19,39 +24,57 @@ import {
   getFavorites,
   removeFavorite,
 } from "../services/favoritesService";
-import { fetchWeatherData, GeoLocation } from "../services/weatherService";
+import {
+  fetchWeatherData,
+  GeoLocation,
+  reverseGeocode,
+} from "../services/weatherService";
 import { CurrentWeather } from "../utils/types";
 
-// Default Coordinates for Vadodara, India (fallback)
+// Default Coordinates for Vadodara, India (fallback for permission denial)
 const DEFAULT_LAT = 22.3072;
 const DEFAULT_LON = 73.1812;
 const DEFAULT_NAME = "Vadodara";
 
+// Define a type for our location state
+interface LocationInfo {
+  lat: number;
+  lon: number;
+  name: string;
+}
+
 export default function Index() {
-  // Get lat, lon, name from navigation parameters if they exist
   const params = useLocalSearchParams<{
     lat?: string;
     lon?: string;
     name?: string;
   }>();
-  const currentLat = params.lat ? parseFloat(params.lat) : DEFAULT_LAT;
-  const currentLon = params.lon ? parseFloat(params.lon) : DEFAULT_LON;
-  // Use the name from params if available, otherwise use default or derive later
-  const initialLocationName = params.name || DEFAULT_NAME;
 
-  const isNotDefaultLocation =
-    currentLat !== DEFAULT_LAT || currentLon !== DEFAULT_LON;
+  const hasNavParams = !!params.lat && !!params.lon;
 
+  const [locationData, setLocationData] = useState<LocationInfo | null>(null);
   const [weatherData, setWeatherData] = useState<CurrentWeather | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favorites, setFavorites] = useState<GeoLocation[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Use the custom hook - provide a default icon initially
+  const { scrollY } = useScroll();
   const { textColor, backgroundGradient } = useWeatherTheme(
     weatherData?.icon ?? "sunny",
     weatherData?.isDay ?? true
+  );
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      scrollY.value = 0;
+    }, [scrollY])
   );
 
   useEffect(() => {
@@ -62,18 +85,80 @@ export default function Index() {
     loadFavorites();
   }, []);
 
+  // Effect 1: Determine the location
   useEffect(() => {
+    const determineLocation = async () => {
+      setError(null);
+      if (hasNavParams) {
+        console.log("Using location from nav params:", params.name);
+        setLocationData({
+          lat: parseFloat(params.lat!),
+          lon: parseFloat(params.lon!),
+          name: params.name || "Selected Location",
+        });
+      } else {
+        console.log("No nav params, fetching current location...");
+        try {
+          let { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== "granted") {
+            setError(
+              "Permission to access location was denied. Showing default location."
+            );
+            setLocationData({
+              lat: DEFAULT_LAT,
+              lon: DEFAULT_LON,
+              name: DEFAULT_NAME,
+            });
+            return;
+          }
+
+          let location = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          const { latitude, longitude } = location.coords;
+
+          const geoData = await reverseGeocode(latitude, longitude);
+          console.log(
+            "Got user location:",
+            geoData?.name || "Current Location"
+          );
+
+          setLocationData({
+            lat: latitude,
+            lon: longitude,
+            name: geoData?.name || "Current Location",
+          });
+        } catch (err) {
+          console.error("Failed to get user location:", err);
+          setError("Failed to get current location. Showing default location.");
+          setLocationData({
+            lat: DEFAULT_LAT,
+            lon: DEFAULT_LON,
+            name: DEFAULT_NAME,
+          });
+        }
+      }
+    };
+
+    determineLocation();
+  }, [hasNavParams, params.lat, params.lon, params.name]);
+
+  // Effect 2: Fetch weather *after* location is known
+  useEffect(() => {
+    if (!locationData) {
+      return;
+    }
+
     const loadWeather = async () => {
       setLoading(true);
       setError(null);
-      console.log(`Fetching weather for: Lat=${currentLat}, Lon=${currentLon}`); // Log coordinates being used
-      const data = await fetchWeatherData(currentLat, currentLon);
+      const { lat, lon, name } = locationData;
+
+      console.log(`Fetching weather for: ${name} (Lat=${lat}, Lon=${lon})`);
+      const data = await fetchWeatherData(lat, lon);
 
       if (data) {
-        // If a name was passed via params, use it directly. Otherwise use API's derived name.
-        const finalLocationName =
-          params.name || data.location || "Current Location";
-        setWeatherData({ ...data, location: finalLocationName });
+        setWeatherData({ ...data, location: name });
       } else {
         setError(
           "Failed to fetch weather data. Please check your API key/network or try searching again."
@@ -83,71 +168,72 @@ export default function Index() {
     };
 
     loadWeather();
-    // Re-run useEffect if lat/lon parameters change
-  }, [currentLat, currentLon, params.name]); // Add params.name to ensure location updates
+  }, [locationData]);
 
   // Check if the current location is a favorite
   useEffect(() => {
     const checkFavoriteStatus = () => {
-      if (weatherData) {
+      if (weatherData && locationData) {
         const isFav = favorites.some(
-          (fav) => fav.lat === currentLat && fav.lon === currentLon
+          (fav) => fav.lat === locationData.lat && fav.lon === locationData.lon
         );
         setIsFavorite(isFav);
       }
     };
     checkFavoriteStatus();
-  }, [weatherData, favorites, currentLat, currentLon]);
+  }, [weatherData, favorites, locationData]);
 
   const toggleFavorite = async () => {
-    // Add a guard clause to prevent running if weatherData is null
-    if (!weatherData) return;
+    if (!weatherData || !locationData) return;
 
-    const locationData: GeoLocation = {
-      name: weatherData.location,
-      lat: currentLat,
-      lon: currentLon,
-      country: "", // Country info isn't critical for this operation
-      formatted: weatherData.condition, // Use condition as a placeholder for formatted text
+    const location: GeoLocation = {
+      name: locationData.name,
+      lat: locationData.lat,
+      lon: locationData.lon,
+      country: "",
+      formatted: weatherData.condition,
     };
-    isFavorite
-      ? await removeFavorite(locationData)
-      : await addFavorite(locationData);
-    setFavorites(await getFavorites()); // Refresh favorites list state
+    isFavorite ? await removeFavorite(location) : await addFavorite(location);
+    setFavorites(await getFavorites());
   };
 
-  if (loading) {
+  // Loading/Error/Data states...
+  if (loading || !locationData) {
     return (
       <ScreenWrapper gradientColors={backgroundGradient} style={styles.center}>
         <ActivityIndicator size="large" color={COLORS.white} />
-        <Text style={styles.loadingText}>Fetching Weather...</Text>
-      </ScreenWrapper>
-    );
-  }
-
-  // Handle case where API key might be missing and fetchWeatherData returned null
-  if (!weatherData && !error) {
-    return (
-      <ScreenWrapper gradientColors={backgroundGradient} style={styles.center}>
-        <Text style={styles.errorText}>
-          Weather data unavailable. Please configure API Key or select a city.
+        <Text style={styles.loadingText}>
+          {error
+            ? "Error"
+            : !locationData
+            ? "Fetching Location..."
+            : "Fetching Weather..."}
         </Text>
+        {error && <Text style={styles.errorText}>{error}</Text>}
       </ScreenWrapper>
     );
   }
 
-  if (error) {
+  if (error && !weatherData) {
     return (
       <ScreenWrapper
         gradientColors={["#FF6B6B", "#FFBABA"]}
         style={styles.center}
       >
         <Text style={styles.errorText}>{error}</Text>
+        {!hasNavParams && (
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => setLocationData(null)}
+          >
+            <Ionicons name="refresh-outline" size={20} color={COLORS.white} />
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        )}
       </ScreenWrapper>
     );
   }
 
-  // Ensure weatherData is not null before rendering components that need it
   if (!weatherData) {
     return (
       <ScreenWrapper gradientColors={backgroundGradient} style={styles.center}>
@@ -163,14 +249,18 @@ export default function Index() {
       gradientColors={backgroundGradient}
       style={styles.contentContainer}
     >
-      {isNotDefaultLocation && (
+      {hasNavParams && (
         <TouchableOpacity
           style={styles.homeButton}
           onPress={() => router.push("/")}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          <Ionicons name="home-outline" size={36} color={COLORS.white} />
-          <Text style={{ color: COLORS.white }}>Back to Home</Text>
+          <Ionicons
+            name="navigate-circle-outline"
+            size={36}
+            color={COLORS.white}
+          />
+          <Text style={{ color: COLORS.white }}>My Location</Text>
         </TouchableOpacity>
       )}
 
@@ -187,56 +277,59 @@ export default function Index() {
         </TouchableOpacity>
       )}
 
-      <ScrollView
+      <Animated.ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
       >
         {/* Main Weather Card */}
-        <CurrentWeatherCard
-          // Use the potentially overridden location name
-          data={weatherData}
-          textColor={textColor}
-        />
+        <CurrentWeatherCard data={weatherData} textColor={textColor} />
+
+        {/* --- ADD THE NEW DETAILS GRID --- */}
+        <WeatherDetailsGrid data={weatherData} textColor={textColor} />
+        {/* -------------------------------- */}
 
         {/* Hourly Forecast Section */}
         <HourlyForecast data={weatherData.hourly} textColor={textColor} />
 
         {/* Daily Forecast Section */}
         <DailyForecast data={weatherData.daily} textColor={textColor} />
-      </ScrollView>
+      </Animated.ScrollView>
     </ScreenWrapper>
   );
 }
 
-// Styles remain largely the same, minor adjustments below
+// Styles
 const styles = StyleSheet.create({
   contentContainer: {
     flex: 1,
   },
   scrollContent: {
     alignItems: "center",
-    paddingBottom: SPACING.xxl, // Increased bottom padding
+    paddingBottom: SPACING.xxl + 80, // Padding for tab bar
   },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    padding: SPACING.md, // Add padding for error/loading messages
+    padding: SPACING.md,
   },
   loadingText: {
-    marginTop: SPACING.sm, // Consistent spacing
+    marginTop: SPACING.sm,
     color: COLORS.white,
     fontSize: 16,
   },
   errorText: {
-    color: COLORS.white, // Use white text on error gradient background too
+    color: COLORS.white,
     fontSize: 16,
     textAlign: "center",
-    paddingHorizontal: SPACING.lg, // More horizontal padding
+    paddingHorizontal: SPACING.lg,
+    marginBottom: SPACING.md, // Add margin for retry button
   },
   homeButton: {
     position: "absolute",
-    top: SPACING.xxl, // Adjust to align with safe area, roughly
+    top: SPACING.xxl,
     left: SPACING.lg,
     zIndex: 10,
     padding: SPACING.sm,
@@ -257,5 +350,19 @@ const styles = StyleSheet.create({
     padding: SPACING.sm,
     borderRadius: 50,
     backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  retryButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.25)",
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: 20,
+    marginTop: SPACING.md,
+  },
+  retryText: {
+    color: COLORS.white,
+    fontSize: 16,
+    marginLeft: SPACING.xs,
   },
 });

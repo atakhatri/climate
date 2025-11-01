@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
-  Keyboard, // Import Keyboard
+  Keyboard,
   StyleSheet,
   Text,
   TextInput,
@@ -121,6 +121,9 @@ export default function CitiesScreen() {
   );
   const mapRef = useRef<MapView>(null); // Ref to control map position
   // -----------------
+
+  // --- Tab Bar Visibility ---
+  const lastOffsetY = useRef(0);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
@@ -394,7 +397,7 @@ export default function CitiesScreen() {
               {/* Callout defines the bubble content */}
               {/* Use Callout directly, not MapView.Callout */}
               <Callout
-                tooltip={false}
+                tooltip={true}
                 onPress={() => handleSelectCity(selectedLocation)}
               >
                 <View style={styles.calloutView}>
@@ -486,6 +489,7 @@ export default function CitiesScreen() {
               keyExtractor={(item, index) => `${item.lat}-${item.lon}-${index}`} // Add index for potential duplicates in search
               style={styles.resultsList}
               keyboardShouldPersistTaps="handled" // Allows tapping items while keyboard is up
+              scrollEventThrottle={16}
               ListHeaderComponent={
                 <Text style={styles.listHeader}>
                   {showFavorites ? "Favorite Locations" : "Search Results"}
@@ -502,7 +506,7 @@ export default function CitiesScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.backgroundLight,
+    backgroundColor: COLORS.backgroundDark,
   },
   container: {
     flex: 1,
@@ -633,9 +637,9 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
   },
   currentLocationButtonContainer: {
-    position: "relative",
+    position: "absolute",
     bottom: 430,
-    right: 140,
+    right: 155,
     width: "100%",
     alignItems: "center",
     justifyContent: "center",
